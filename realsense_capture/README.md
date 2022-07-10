@@ -1,0 +1,3 @@
+```
+python3 stereo_calibration.py --left_file=/home/jun/Github/ComputerVisionTools/realsense_capture/left_camera.yaml --right_file=/home/jun/Github/ComputerVisionTools/realsense_capture/right_camera.yaml --left_prefix=left --right_prefix=right --left_dir=/home/jun/Github/ComputerVisionTools/realsense_capture/images --right_dir=/home/jun/Github/ComputerVisionTools/realsense_capture/images --image_format=jpg --save_file=/home/jun/Github/ComputerVisionTools/realsense_capture/results.yaml
+```
