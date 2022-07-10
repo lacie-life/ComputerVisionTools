@@ -20,6 +20,8 @@ def stereo_calibrate(left_file, right_file, left_dir, left_prefix, right_dir, ri
     flag = 0
     # flag |= cv2.CALIB_FIX_INTRINSIC
     flag |= cv2.CALIB_USE_INTRINSIC_GUESS
+
+
     ret, K1, D1, K2, D2, R, T, E, F = cv2.stereoCalibrate(objp, leftp, rightp, K1, D1, K2, D2, image_size)
     print("Stereo calibration rms: ", ret)
     R1, R2, P1, P2, Q, roi_left, roi_right = cv2.stereoRectify(K1, D1, K2, D2, image_size, R, T, flags=cv2.CALIB_ZERO_DISPARITY, alpha=0.9)
@@ -59,6 +61,9 @@ def load_image_points(left_dir, left_prefix, right_dir, right_prefix, image_form
     left_images.sort()
     right_images.sort()
 
+    print("Number of left image: ", len(left_images))
+    print("Number of right image: ", len(right_images))
+
     # Pairs should be same size. Otherwise we have sync problem.
     if len(left_images) != len(right_images):
         print("Numbers of left and right images are not equal. They should be pairs.")
@@ -75,6 +80,9 @@ def load_image_points(left_dir, left_prefix, right_dir, right_prefix, image_form
         right = cv2.imread(right_im)
         gray_right = cv2.cvtColor(right, cv2.COLOR_BGR2GRAY)
 
+        cv2.imshow("right", gray_right)
+        cv2.waitKey(0)
+
         # Find the chess board corners
         ret_right, corners_right = cv2.findChessboardCorners(gray_right, pattern_size,
                                                              cv2.CALIB_CB_ADAPTIVE_THRESH | cv2.CALIB_CB_FILTER_QUADS)
@@ -82,6 +90,9 @@ def load_image_points(left_dir, left_prefix, right_dir, right_prefix, image_form
         # Left Object Points
         left = cv2.imread(left_im)
         gray_left = cv2.cvtColor(left, cv2.COLOR_BGR2GRAY)
+
+        cv2.imshow("left", gray_left)
+        cv2.waitKey(0)
 
         # Find the chess board corners
         ret_left, corners_left = cv2.findChessboardCorners(gray_left, pattern_size,
@@ -107,17 +118,26 @@ def load_image_points(left_dir, left_prefix, right_dir, right_prefix, image_form
 if __name__ == '__main__':
     # Check the help parameters to understand arguments
     parser = argparse.ArgumentParser(description='Camera calibration')
-    parser.add_argument('--left_file', type=str, required=True, help='left matrix file')
-    parser.add_argument('--right_file', type=str, required=True, help='right matrix file')
-    parser.add_argument('--left_prefix', type=str, required=True, help='left image prefix')
-    parser.add_argument('--right_prefix', type=str, required=True, help='right image prefix')
-    parser.add_argument('--left_dir', type=str, required=True, help='left images directory path')
-    parser.add_argument('--right_dir', type=str, required=True, help='right images directory path')
-    parser.add_argument('--image_format', type=str, required=True, help='image format, png/jpg')
+    parser.add_argument('--left_file', type=str, required=False, help='left matrix file'
+                        , default="/home/lacie/Github/ComputerVisionTools/calib/left_camera.yaml")
+    parser.add_argument('--right_file', type=str, required=False, help='right matrix file'
+                        , default="/home/lacie/Github/ComputerVisionTools/calib/right_camera.yaml")
+    parser.add_argument('--left_prefix', type=str, required=False, help='left image prefix'
+                        , default="left/")
+    parser.add_argument('--right_prefix', type=str, required=False, help='right image prefix'
+                        , default="right/")
+    parser.add_argument('--left_dir', type=str, required=False, help='left images directory path'
+                        , default="/home/lacie/Github/ComputerVisionTools/calib/images")
+    parser.add_argument('--right_dir', type=str, required=False, help='right images directory path'
+                        , default="/home/lacie/Github/ComputerVisionTools/calib/images")
+    parser.add_argument('--image_format', type=str, required=False, help='image format, png/jpg'
+                        , default="jpg")
     parser.add_argument('--width', type=int, required=False, help='chessboard width size, default is 9')
     parser.add_argument('--height', type=int, required=False, help='chessboard height size, default is 6')
-    parser.add_argument('--square_size', type=float, required=False, help='chessboard square size')
-    parser.add_argument('--save_file', type=str, required=True, help='YML file to save stereo calibration matrices')
+    parser.add_argument('--square_size', type=float, required=False, help='chessboard square size'
+                        , default=0.025)
+    parser.add_argument('--save_file', type=str, required=False, help='YML file to save stereo calibration matrices'
+                        , default="/home/lacie/Github/ComputerVisionTools/calib/results.yaml")
 
     args = parser.parse_args()
     # If chessboard pattern is different, we will pass them as arguments.
