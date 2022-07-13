@@ -136,8 +136,8 @@ int main(int argc, char * argv[])
 
         char c = (char)cv::waitKey(25);
         if(c == 27){
-            sprintf(left_path, "/home/jun/Github/ComputerVisionTools/realsense_zed_capture/images/left/0-%d.jpg", left);
-            sprintf(right_path, "/home/jun/Github/ComputerVisionTools/realsense_zed_capture/images/right/1-%d.jpg", right);
+            sprintf(right_path, "/home/jun/Github/ComputerVisionTools/realsense_zed_capture/images/right/0-%d.jpg", right);
+            sprintf(left_path, "/home/jun/Github/ComputerVisionTools/realsense_zed_capture/images/left/1-%d.jpg", left);
             sprintf(center_path, "/home/jun/Github/ComputerVisionTools/realsense_zed_capture/images/center/2-%d.jpg", center);
 
             std::cout << left_path << std::endl;
@@ -145,8 +145,8 @@ int main(int argc, char * argv[])
             std::cout << center_path << std::endl;
     
             if (!new_images.empty()){
-                cv::imwrite(left_path, new_images.at(0));
-                cv::imwrite(right_path, new_images.at(1));
+                cv::imwrite(right_path, new_images.at(0));
+                cv::imwrite(left_path, new_images.at(1));
                 cv::imwrite(center_path, new_images.at(2));
                 left++;
                 right++;
