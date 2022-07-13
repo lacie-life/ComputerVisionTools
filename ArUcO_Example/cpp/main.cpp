@@ -166,6 +166,7 @@ int main(int argc, char **argv)
 
 
     // Compute transformation matrix 2 to 1
+    // https://docs.opencv.org/4.x/d9/dab/tutorial_homography.html#:~:text=Demo%203%3A%20Homography%20from%20the,164%5D%20for%20more%20information).
     Mat R1, R2;
     Rodrigues(rvecs1[0], R1);
     Rodrigues(rvecs2[0], R2);
