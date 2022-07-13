@@ -58,20 +58,20 @@ def pose_esitmation(frame, aruco_dict_type, matrix_coefficients, distortion_coef
             # Draw Axis
             cv2.aruco.drawAxis(frame, matrix_coefficients, distortion_coefficients, rvec, tvec, 0.01)
 
-    return frame, rvec, tvec
+    return frame, rotationMatrix, tvec
 
 
 if __name__ == '__main__':
 
     ap = argparse.ArgumentParser()
     ap.add_argument("--image1", type=str, help="Path to image1",
-                    default="/home/jun/Github/ComputerVisionTools/ArUcO_Example/imgs/center-left/center.jpg")
+                    default="/home/lacie/Github/ComputerVisionTools/ArUcO_Example/imgs/center-left/center.jpg")
     ap.add_argument("--file1", type=str, help="Path to calibration matrix",
-                    default="/home/jun/Github/ComputerVisionTools/ArUcO_Example/center_camera.yaml")
+                    default="/home/lacie/Github/ComputerVisionTools/ArUcO_Example/python/center_camera.yaml")
     ap.add_argument("--image2", type=str, help="Path to image2",
-                    default="/home/jun/Github/ComputerVisionTools/ArUcO_Example/imgs/center-left/left.jpg")
+                    default="/home/lacie/Github/ComputerVisionTools/ArUcO_Example/imgs/center-left/left.jpg")
     ap.add_argument("--file2", type=str, help="Path to calibration matrix",
-                    default="/home/jun/Github/ComputerVisionTools/ArUcO_Example/left_camera.yaml")
+                    default="/home/lacie/Github/ComputerVisionTools/ArUcO_Example/python/left_camera.yaml")
     ap.add_argument("--type", type=str, default="DICT_ARUCO_ORIGINAL", help="Type of ArUCo tag to detect")
     args = ap.parse_args()
 
