@@ -1,7 +1,8 @@
 import numpy as np
 import cv2
 import sys
-from utils import ARUCO_DICT
+from utils import ARUCO_DICT, rotationMatrixToQuaternion3
+from calibration_store import load_coefficients
 import argparse
 import time
 
@@ -21,9 +22,7 @@ def pose_esitmation(frame, aruco_dict_type, matrix_coefficients, distortion_coef
     cv2.aruco_dict = cv2.aruco.Dictionary_get(aruco_dict_type)
     parameters = cv2.aruco.DetectorParameters_create()
 
-    corners, ids, rejected_img_points = cv2.aruco.detectMarkers(gray, cv2.aruco_dict, parameters=parameters,
-                                                                cameraMatrix=matrix_coefficients,
-                                                                distCoeff=distortion_coefficients)
+    corners, ids, rejected_img_points = cv2.aruco.detectMarkers(gray, cv2.aruco_dict, parameters)
 
     # If markers are detected
     if len(corners) > 0:
@@ -33,7 +32,19 @@ def pose_esitmation(frame, aruco_dict_type, matrix_coefficients, distortion_coef
                                                                            distortion_coefficients)
 
             # Convert rotation vector to rotation matrix
+            # https://answers.ros.org/question/314828/opencv-camera-rvec-tvec-to-ros-world-pose/
             # https://docs.opencv.org/4.x/d9/d0c/group__calib3d.html#ga61585db663d9da06b68e70cfbf6a1eac
+            rotationMatrix = any
+            cv2.Rodrigues(rvec, rotationMatrix)
+
+            print("Rotation Matrix")
+            print(rotationMatrix)
+
+            print("Quaternion")
+            print(rotationMatrixToQuaternion3(rotationMatrix))
+
+            print("Translation vector")
+            print(tvec)
 
             # Draw a square around the markers
             cv2.aruco.drawDetectedMarkers(frame, corners)
@@ -47,38 +58,31 @@ def pose_esitmation(frame, aruco_dict_type, matrix_coefficients, distortion_coef
 if __name__ == '__main__':
 
     ap = argparse.ArgumentParser()
-    ap.add_argument("-k", "--K_Matrix", required=True, help="Path to calibration matrix (numpy file)")
-    ap.add_argument("-d", "--D_Coeff", required=True, help="Path to distortion coefficients (numpy file)")
-    ap.add_argument("-t", "--type", type=str, default="DICT_ARUCO_ORIGINAL", help="Type of ArUCo tag to detect")
-    args = vars(ap.parse_args())
+    ap.add_argument("--image", required=True, type=str, help="Path to image")
+    ap.add_argument("--file", required=True, type=str, help="Path to calibration matrix")
+    ap.add_argument("--type", type=str, default="DICT_ARUCO_ORIGINAL", help="Type of ArUCo tag to detect")
+    args = ap.parse_args()
 
-    if ARUCO_DICT.get(args["type"], None) is None:
-        print(f"ArUCo tag type '{args['type']}' is not supported")
+    if ARUCO_DICT.get(args.type, None) is None:
+        print(f"ArUCo tag type '{args.type}' is not supported")
         sys.exit(0)
 
-    aruco_dict_type = ARUCO_DICT[args["type"]]
-    calibration_matrix_path = args["K_Matrix"]
-    distortion_coefficients_path = args["D_Coeff"]
+    aruco_dict_type = ARUCO_DICT[args.type]
 
-    k = np.load(calibration_matrix_path)
-    d = np.load(distortion_coefficients_path)
+    print(args.file)
+    K, D = load_coefficients(args.file)
 
-    video = cv2.VideoCapture(0)
+    print(K)
+    print(D)
+
     time.sleep(2.0)
 
-    while True:
-        ret, frame = video.read()
+    image = cv2.imread(args.image)
 
-        if not ret:
-            break
+    output = pose_esitmation(image, aruco_dict_type, K, D)
 
-        output = pose_esitmation(frame, aruco_dict_type, k, d)
+    cv2.imshow('Estimated Pose', output)
 
-        cv2.imshow('Estimated Pose', output)
+    cv2.waitKey(0)
 
-        key = cv2.waitKey(1) & 0xFF
-        if key == ord('q'):
-            break
-
-    video.release()
     cv2.destroyAllWindows()
