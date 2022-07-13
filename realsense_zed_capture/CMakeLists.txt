@@ -23,7 +23,7 @@ link_directories(${ZED_LIBRARY_DIR})
 link_directories(${CUDA_LIBRARY_DIRS})
 
 # Add the application sources to the target
-add_executable(${PROJECT_NAME} capture.cpp)
+add_executable(capture capture.cpp)
 
 if (LINK_SHARED_ZED)
     set(ZED_LIBS ${ZED_LIBRARIES} ${CUDA_CUDA_LIBRARY} ${CUDA_CUDART_LIBRARY})
@@ -32,5 +32,5 @@ else()
 endif()
 
 # Link librealsense2 to the target
-target_link_libraries(${PROJECT_NAME} ${realsense2_LIBRARY} ${OpenCV_LIBS} ${ZED_LIBS})
+target_link_libraries(capture ${realsense2_LIBRARY} ${OpenCV_LIBS} ${ZED_LIBS})
 

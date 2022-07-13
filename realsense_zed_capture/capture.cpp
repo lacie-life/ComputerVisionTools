@@ -93,7 +93,8 @@ int main(int argc, char * argv[])
     char right_path[100];
     char center_path[100];
 
-    while (1) 
+    char key = ' ';
+    while (key != 'q') 
     {
         std::vector<cv::Mat> new_images;
 
@@ -153,6 +154,9 @@ int main(int argc, char * argv[])
             }
         }
     }
+    
+    zed.close();
+    return 0;
 
     return 0;
 }
