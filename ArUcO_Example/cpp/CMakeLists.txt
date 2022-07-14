@@ -16,3 +16,6 @@ target_link_libraries(pose_estimation ${OpenCV_LIBRARIES} Eigen3::Eigen)
 
 target_compile_options(pose_estimation PRIVATE -O3 -std=c++11)
 
+add_executable(calculate calculate.cpp)
+target_link_libraries(calculate ${OpenCV_LIBRARIES})
+
