@@ -2,94 +2,80 @@
 #include <thread>
 #include <chrono>
 #include <math.h>
-#include <pcl/io/pcd_io.h>
-#include <pcl/visualization/pcl_visualizer.h>
 #include <vector>
+#include <mutex>
+
+#include <pcl/io/pcd_io.h>
+#include <pcl/common/common_headers.h>
+#include <pcl/visualization/pcl_visualizer.h>
 
 using namespace std::chrono;
+using namespace std;
+
 Eigen::MatrixXd traj(10000,3);
 int idx_list[20] = {150,300};
 int final_end = 300;
 
-//generate simple camera position
-bool gen_traj_cmd()
-{
-    int i = 1;
-    traj.row(0)<<0,1,15;//initialize
-
-    while(i<final_end){
-        //forward
-        if(i<idx_list[0]){
-            traj.row(i)<< traj(i-1,0), traj(i-1,1), traj(i-1,2)-0.08;
-        }
-        //backward
-        else if(i<idx_list[1]){
-            traj.row(i)<< traj(i-1,0), traj(i-1,1), traj(i-1,2)+0.08;
-        }
-        i++;
-    }
+shared_ptr<pcl::visualization::PCLVisualizer> createRGBVisualizer(pcl::PointCloud<pcl::PointXYZRGB>::ConstPtr cloud){
+    // Open 3D viewer and add point cloud
+    shared_ptr<pcl::visualization::PCLVisualizer> viewer(new pcl::visualization::PCLVisualizer("PCL ZED 3D Viewer"));
+    viewer->setBackgroundColor(0.12, 0.12, 0.12);
+    pcl::visualization::PointCloudColorHandlerRGBField<pcl::PointXYZRGB> rgb(cloud);
+    viewer->addPointCloud<pcl::PointXYZRGB>(cloud, rgb);
+    viewer->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 1.5);
+    viewer->addCoordinateSystem(1.0);
+    viewer->initCameraParameters();
+    return (viewer);
 }
 
-pcl::visualization::PCLVisualizer::Ptr mapping_vis (pcl::PointCloud<pcl::PointXYZ>::ConstPtr cloud)
-{
-    pcl::visualization::PCLVisualizer::Ptr viewer (new pcl::visualization::PCLVisualizer ("3D Viewer"));
-    viewer->setBackgroundColor (0, 0, 0);
-    viewer->addPointCloud<pcl::PointXYZ> (cloud, "sample cloud");
-    viewer->setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 1, "sample cloud");
-    viewer->addCoordinateSystem (1.0);
-    viewer->initCameraParameters ();
-    return (viewer);
+inline float convertColor(float colorIn){
+    uint32_t color_uint = *(uint32_t *) & colorIn;
+    unsigned char *color_uchar = (unsigned char *) &color_uint;
+    color_uint = ((uint32_t) color_uchar[0] << 16 | (uint32_t) color_uchar[1] << 8 | (uint32_t) color_uchar[2]);
+    return *reinterpret_cast<float *> (&color_uint);
 }
 
 int main (int argc, char** argv)
 {
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr p_pcl_point_cloud(new pcl::PointCloud<pcl::PointXYZRGB>);
+    p_pcl_point_cloud->points.resize((640, 480));
 
-    //initialization
-    int idx = 0;
-    Eigen::Vector3d pos, focal, up_vector;
-    std::vector<pcl::visualization::Camera> Cameras;
+    shared_ptr<pcl::visualization::PCLVisualizer> viewer = createRGBVisualizer(p_pcl_point_cloud);
 
-    std::string file_name (argv[1]);
-    //read map
-    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_map (new pcl::PointCloud<pcl::PointXYZ>);
+    // Set Viewer initial position
+    viewer->setCameraPosition(0, 0, 5,    0, 0, 1,   0, 1, 0);
+    viewer->setCameraClipDistances(0.1,1000);
 
-    if (pcl::io::loadPCDFile<pcl::PointXYZ> (file_name, *cloud_map) == -1) //* load the file
-    {
-        PCL_ERROR ("Couldn’t read pcd file \n");
-        return (-1);
+    // Loop until viewer catches the stop signal
+    while (!viewer->wasStopped()) {
+
+//        //Lock to use the point cloud
+//        mutex_input.lock();
+//        float *p_data_cloud = data_cloud.getPtr<float>();
+//        int index = 0;
+//
+//        // Check and adjust points for PCL format
+//        for (auto &it : p_pcl_point_cloud->points) {
+//            float X = p_data_cloud[index];
+//            if (!isValidMeasure(X)) // Checking if it's a valid point
+//                it.x = it.y = it.z = it.rgb = 0;
+//            else {
+//                it.x = X;
+//                it.y = p_data_cloud[index + 1];
+//                it.z = p_data_cloud[index + 2];
+//                it.rgb = convertColor(p_data_cloud[index + 3]); // Convert a 32bits float into a pcl .rgb format
+//            }
+//            index += 4;
+//        }
+//
+//        // Unlock data and update Point cloud
+//        mutex_input.unlock();
+//        viewer->updatePointCloud(p_pcl_point_cloud);
+        viewer->spinOnce(10);
     }
-    std::cout << "Loaded "
-    << cloud_map->width * cloud_map->height
-            << " data points from loaded map with the following fields: "
-    << std::endl;
 
-    pcl::visualization::PCLVisualizer::Ptr viewer;
-    viewer = mapping_vis(cloud_map);
+    // Close the viewer
+    viewer->close();
 
-    gen_traj_cmd();
-    focal << 0,0,0;//initialize focal point.
-
-    while (!viewer->wasStopped ())
-    {
-        //get camera position, focal point, and up vector
-        viewer->getCameras(Cameras);
-        pos << Cameras[0].pos[0],Cameras[0].pos[1],Cameras[0].pos[2];
-        focal << Cameras[0].focal[0], Cameras[0].focal[1], Cameras[0].focal[2];
-        up_vector << Cameras[0].view[0],Cameras[0].view[1],Cameras[0].view[2];
-
-        //set camera focal point
-        focal<<pos(0), pos(1), pos(2)-10;
-
-        // update camera position, focal point, and up vector
-        if(idx<final_end){
-            viewer->setCameraPosition(traj(idx,0),traj(idx,1),traj(idx,2),focal(0),focal(1),focal(2),up_vector(0),up_vector(1),up_vector(2),0);
-        }else{
-            viewer->spinOnce(0); //trajectory end. get keyboard and mouse callback.
-        }
-
-        milliseconds dura(5);//loop for 5 miliseconds
-        std::this_thread::sleep_for(dura);
-
-        idx++;
-    }
+    return 0;
 }
