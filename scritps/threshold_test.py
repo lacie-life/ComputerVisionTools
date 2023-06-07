@@ -29,15 +29,25 @@ foregroundModel = np.zeros((1, 65), np.float64)
 # (startingPoint_x, startingPoint_y, width, height)
 # these coordinates are according to the input image
 # it may vary for different images
-rectangle = (20, 100, 150, 150)
+rectangle = (100, 330, 380, 370)
+rectangle1 = (480, 240, 400, 300)
+rectangle2 = (970, 70, 300, 320)
 
 # apply the grabcut algorithm with appropriate
 # values as parameters, number of iterations = 3
 # cv2.GC_INIT_WITH_RECT is used because
 # of the rectangle mode is used
-cv2.grabCut(image, mask, rectangle,
+cv2.grabCut(image, mask, rectangle1,
             backgroundModel, foregroundModel,
             3, cv2.GC_INIT_WITH_RECT)
+
+# cv2.grabCut(image, mask, rectangle1,
+#             backgroundModel, foregroundModel,
+#             3, cv2.GC_INIT_WITH_RECT)
+#
+# cv2.grabCut(image, mask, rectangle2,
+#             backgroundModel, foregroundModel,
+#             3, cv2.GC_INIT_WITH_RECT)
 
 # In the new mask image, pixels will
 # be marked with four flags
@@ -54,10 +64,14 @@ mask2 = np.where((mask == 2) | (mask == 0), 0, 1).astype('uint8')
 # the input image to give the segmented image.
 image = image * mask2[:, :, np.newaxis]
 
+ret, bw_img = cv2.threshold(image, 1, 255, cv2.THRESH_BINARY)
+
 # output segmented image with colorbar
-plt.imshow(image)
-plt.colorbar()
+plt.imshow(bw_img)
+plt.savefig('test2.svg', format='svg', dpi=1200)
+# plt.colorbar()
 plt.show()
+
 
 
 
