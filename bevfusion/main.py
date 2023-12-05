@@ -87,40 +87,26 @@ image_undistorted = cv2.undistort(image, K, D)
 cv2.imshow('image', image)
 cv2.waitKey(0)
 
-tl = [480, 273]
-tr = [694, 273]
-br = [757, 342]
-bl = [416, 342]
+tl = [480, 272]
+tr = [690, 270]
+br = [756, 339]
+bl = [425, 339]
 
-tl_n = [480 - 100, 273]
-tr_n = [694 - 100, 273]
-br_n = [757, 342]
-bl_n = [416, 342]
-
-widthA = np.sqrt(((br[0] - bl[0]) ** 2) + ((br[1] - bl[1]) ** 2))
-widthB = np.sqrt(((tr[0] - tl[0]) ** 2) + ((tr[1] - tl[1]) ** 2))
-maxWidth = max(int(widthA), int(widthB))
-
-heightA = np.sqrt(((tr[0] - br[0]) ** 2) + ((tr[1] - br[1]) ** 2))
-heightB = np.sqrt(((tl[0] - bl[0]) ** 2) + ((tl[1] - bl[1]) ** 2))
-maxHeight = max(int(heightA), int(heightB))
-
-print(maxWidth, maxHeight)
-
-# Define source and destination points for the perspective transformation
-# src = np.float32([[tl, tr, br, bl]])
-# dst = np.array([[0, 0], [maxWidth - 1, 0], [maxWidth - 1, maxHeight - 1], [0, maxHeight - 1]], dtype="float32")
+tl_n = [407, 273]
+tr_n = [784, 273]
+br_n = [767, 361]
+bl_n = [414, 375]
 
 print(image.shape)
 
-src = np.float32([tl, tr, br, bl])
-dst = np.float32([tl_n, tr_n, br_n, bl_n])
+src = np.float32([bl, tl, br, tr])
+dst = np.float32([bl_n, tl_n, br_n, tr_n])
 
 # Compute the perspective transform, M
 M = cv2.getPerspectiveTransform(src, dst)
 
 # Apply perspective transformation to get bird's eye view
-birdseye_view = cv2.warpPerspective(image_undistorted, M, (1224, 370))
+birdseye_view = cv2.warpPerspective(image_undistorted, M, (1224, 370), flags=cv2.INTER_LANCZOS4)
 
 # Display or save the Bird's Eye View image
 cv2.imshow('BEV Image', birdseye_view)
