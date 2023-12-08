@@ -3,7 +3,8 @@ import numpy as np
 
 # Load image and calibration data
 image = cv2.imread('/home/lacie/Datasets/KITTI/objects/train/image_2/000000.png')
-point_cloud = np.fromfile('/home/lacie/Datasets/KITTI/objects/train/velodyne/000000.bin', dtype=np.float32).reshape(-1, 4)
+point_cloud = np.fromfile('/home/lacie/Datasets/KITTI/objects/train/velodyne/000000.bin', dtype=np.float32).reshape(-1,
+                                                                                                                    4)
 calib_file = '/home/lacie/Datasets/KITTI/objects/train/calib/000000.txt'
 
 # Back back (of vehicle) Point Cloud boundary for BEV
@@ -18,8 +19,10 @@ boundary = {
 
 DISCRETIZATION = (boundary["maxX"] - boundary["minX"]) / 608
 
-def read_calib_file(filepath):
 
+
+
+def read_calib_file(filepath):
     data = {}
     with open(filepath, 'r') as file:
         for line in file.readlines():
@@ -28,13 +31,43 @@ def read_calib_file(filepath):
                 camera_matrix = np.array([float(val) for val in calib_values[1:]]).reshape(3, 4)
     return camera_matrix
 
+def read_cam2lidar_calib_file(filepath):
+    data = {}
+    with open(filepath, 'r') as file:
+        for line in file.readlines():
+            if 'R0_rect' in line:
+                calib_values = line.strip().split(' ')
+                R0_rect = np.array([float(val) for val in calib_values[1:]]).reshape(3, 3)
+            if 'Tr_velo_to_cam' in line:
+                calib_values = line.strip().split(' ')
+                Tr_velo_to_cam = np.array([float(val) for val in calib_values[1:]]).reshape(3, 4)
 
-def makeBVFeature(PointCloud_, Discretization = DISCRETIZATION, bc = boundary):
+    T_cam_lidar = np.linalg.inv(np.vstack([Tr_velo_to_cam, [0, 0, 0, 1]]))
+
+    return R0_rect, Tr_velo_to_cam, T_cam_lidar
+
+
+def make_BVFeature(point_cloud, Discretization=DISCRETIZATION, bc=boundary):
     Height = 608 + 1
     Width = 608 + 1
 
+    # Boundary condition
+    minX = boundary['minX']
+    maxX = boundary['maxX']
+    minY = boundary['minY']
+    maxY = boundary['maxY']
+    minZ = boundary['minZ']
+    maxZ = boundary['maxZ']
+
+    # Remove the point out of range x,y,z
+    mask = np.where((point_cloud[:, 0] >= minX) & (point_cloud[:, 0] <= maxX) & (point_cloud[:, 1] >= minY) & (
+            point_cloud[:, 1] <= maxY) & (point_cloud[:, 2] >= minZ) & (point_cloud[:, 2] <= maxZ))
+    PointCloud = point_cloud[mask]
+
+    PointCloud[:, 2] = PointCloud[:, 2] - minZ
+
     # Discretize Feature Map
-    PointCloud = np.copy(PointCloud_)
+    PointCloud = np.copy(PointCloud)
     PointCloud[:, 0] = np.int_(np.floor(PointCloud[:, 0] / Discretization))
     PointCloud[:, 1] = np.int_(np.floor(PointCloud[:, 1] / Discretization) + Width / 2)
 
@@ -73,6 +106,73 @@ def makeBVFeature(PointCloud_, Discretization = DISCRETIZATION, bc = boundary):
 
     return RGB_Map
 
+def project_image_to_lidar_bev (image, calib_file):
+
+    minX = boundary['minX']
+    maxX = boundary['maxX']
+
+    image_discretization = (maxX - minX) / 1224
+
+    # Load calibration data
+    R0_rect, Tr_velo_to_cam, T_cam_lidar = read_cam2lidar_calib_file(calib_file)
+
+    # Project image point to 3D points in camera coordinate
+    height, width, _ = image.shape
+    x = np.linspace(0, width - 1, width)
+    y = np.linspace(0, height - 1, height)
+    x, y = np.meshgrid(x, y)
+    homogenous_image_points = np.stack([x, y, np.ones_like(x)], axis=2).reshape(-1, 3)
+
+    camera_points = np.linalg.inv(P2[:, :3]) @ homogenous_image_points.T
+
+    print("Camera points")
+    print(camera_points)
+
+    camera_points_homogenous = np.vstack([camera_points, np.ones(camera_points.shape[1])])
+
+    # Project 3D points in camera coordinate to 3D points in lidar coordinate
+    lidar_points = T_cam_lidar @ camera_points_homogenous
+
+    print("Lidar points")
+    print(lidar_points)
+
+    print(np.max(lidar_points[0, :]))
+    print(np.min(lidar_points[0, :]))
+
+    ratio = np.max(lidar_points[0, :]) / np.min(lidar_points[0, :]) / 1224
+
+    # Project 3D points in lidar coordinate to 2D points in lidar BEV
+    bev_points = lidar_points[:2, :]
+    bev_points[0, :] = np.int_(np.floor(bev_points[0, :] / image_discretization)).astype(int)
+    bev_points[1, :] = np.int_(np.floor(bev_points[1, :] / image_discretization) + 608 / 2).astype(int)
+
+    print("BEV points")
+    print(bev_points)
+
+    finite_indices = np.isfinite(bev_points).all(axis=0)
+    bev_points = bev_points[:, finite_indices]
+
+    bev_points = np.int_(bev_points)
+
+    bev_points[0, bev_points[0, :] >= 608] = 607
+    bev_points[1, bev_points[1, :] >= 608] = 607
+
+    bev_image = np.zeros((608, 608, 3), dtype=np.uint8)
+
+    for i in range(min(bev_points.shape[1], y.shape[1])):
+        x_coord = int(y[0, i])
+        y_coord = int(x[0, i])
+        # print(x_coord, y_coord)
+        # print(bev_points[0, i], bev_points[1, i])
+        if x_coord < 608 and y_coord < 608:
+            rgb_value = image[x_coord, y_coord, :]
+            bev_image[bev_points[0, i], bev_points[1, i], :] = rgb_value
+
+    print(bev_image)
+
+    return bev_image
+
+
 P2 = read_calib_file(calib_file)
 
 K = P2.reshape(3, 4)[:, :3]
@@ -84,33 +184,20 @@ sz = (608, 608)
 
 image_undistorted = cv2.undistort(image, K, D)
 
-cv2.imshow('image', image)
+# cv2.imshow('image undistorted', image_undistorted)
+# cv2.waitKey(0)
+
+image_bev = project_image_to_lidar_bev(image_undistorted, calib_file)
+lidar_bev = make_BVFeature(point_cloud)
+
+cv2.imwrite('camera_birdseye_view.png', image_bev)
+# Display or save the Bird's Eye View image
+cv2.imshow('BEV Image', image_bev)
 cv2.waitKey(0)
 
-tl = [480, 272]
-tr = [690, 270]
-br = [756, 339]
-bl = [425, 339]
-
-tl_n = [407, 273]
-tr_n = [784, 273]
-br_n = [767, 361]
-bl_n = [414, 375]
-
-print(image.shape)
-
-src = np.float32([bl, tl, br, tr])
-dst = np.float32([bl_n, tl_n, br_n, tr_n])
-
-# Compute the perspective transform, M
-M = cv2.getPerspectiveTransform(src, dst)
-
-# Apply perspective transformation to get bird's eye view
-birdseye_view = cv2.warpPerspective(image_undistorted, M, (1224, 370), flags=cv2.INTER_LANCZOS4)
-
+cv2.imwrite('lidar_birdseye_view.png', lidar_bev)
 # Display or save the Bird's Eye View image
-cv2.imshow('BEV Image', birdseye_view)
+cv2.imshow('BEV Image', lidar_bev)
+
 cv2.waitKey(0)
 cv2.destroyAllWindows()
-
-
