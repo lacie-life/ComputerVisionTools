@@ -6,6 +6,8 @@ image = cv2.imread('/home/lacie/Datasets/KITTI/objects/train/image_2/000000.png'
 point_cloud = np.fromfile('/home/lacie/Datasets/KITTI/objects/train/velodyne/000000.bin', dtype=np.float32).reshape(-1,
                                                                                                                     4)
 calib_file = '/home/lacie/Datasets/KITTI/objects/train/calib/000000.txt'
+cam2cam_file = '/home/lacie/Datasets/KITTI/objects/simpleKITTI/training/global_calib/calib_cam_to_cam.txt'
+velo2cam_file = '/home/lacie/Datasets/KITTI/objects/simpleKITTI/training/global_calib/calib_velo_to_cam.txt'
 
 # Back back (of vehicle) Point Cloud boundary for BEV
 boundary = {
@@ -187,17 +189,24 @@ image_undistorted = cv2.undistort(image, K, D)
 # cv2.imshow('image undistorted', image_undistorted)
 # cv2.waitKey(0)
 
-image_bev = project_image_to_lidar_bev(image_undistorted, calib_file)
+# image_bev = project_image_to_lidar_bev(image_undistorted, calib_file)
 lidar_bev = make_BVFeature(point_cloud)
 
-cv2.imwrite('camera_birdseye_view.png', image_bev)
-# Display or save the Bird's Eye View image
-cv2.imshow('BEV Image', image_bev)
-cv2.waitKey(0)
+# cv2.imwrite('camera_birdseye_view.png', image_bev)
+# # Display or save the Bird's Eye View image
+# cv2.imshow('BEV Image', image_bev)
+# cv2.waitKey(0)
 
-cv2.imwrite('lidar_birdseye_view.png', lidar_bev)
+print(lidar_bev.shape)
+
+lidar_bev_transposed = np.transpose(lidar_bev, (1, 2, 0))
+
+# Convert the data type to uint8
+lidar_bev_transposed = (lidar_bev_transposed * 255).astype(np.uint8)
+
+cv2.imwrite('lidar_birdseye_view.png', lidar_bev_transposed)
 # Display or save the Bird's Eye View image
-cv2.imshow('BEV Image', lidar_bev)
+cv2.imshow('BEV Image', lidar_bev_transposed)
 
 cv2.waitKey(0)
 cv2.destroyAllWindows()
