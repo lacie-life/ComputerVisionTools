@@ -11,7 +11,6 @@ image_path = '/home/lacie/Datasets/KITTI/objects/train/image_2/000100.png'
 pointcloud_path = '/home/lacie/Datasets/KITTI/objects/train/velodyne/000100.bin'
 calib_path = '/home/lacie/Datasets/KITTI/objects/train/calib/000100.txt'
 
-
 cam2cam_file = '/home/lacie/Datasets/KITTI/objects/simpleKITTI/training/global_calib/calib_cam_to_cam.txt'
 velo2cam_file = '/home/lacie/Datasets/KITTI/objects/simpleKITTI/training/global_calib/calib_velo_to_cam.txt'
 
