@@ -2,10 +2,10 @@ import cv2
 import numpy as np
 
 # Load image and calibration data
-image = cv2.imread('/home/lacie/Datasets/KITTI/objects/train/image_2/000000.png')
-point_cloud = np.fromfile('/home/lacie/Datasets/KITTI/objects/train/velodyne/000000.bin', dtype=np.float32).reshape(-1,
+image = cv2.imread('/home/lacie/Datasets/KITTI/objects/train/image_2/000100.png')
+point_cloud = np.fromfile('/home/lacie/Datasets/KITTI/objects/train/velodyne/000100.bin', dtype=np.float32).reshape(-1,
                                                                                                                     4)
-calib_file = '/home/lacie/Datasets/KITTI/objects/train/calib/000000.txt'
+calib_file = '/home/lacie/Datasets/KITTI/objects/train/calib/000100.txt'
 cam2cam_file = '/home/lacie/Datasets/KITTI/objects/simpleKITTI/training/global_calib/calib_cam_to_cam.txt'
 velo2cam_file = '/home/lacie/Datasets/KITTI/objects/simpleKITTI/training/global_calib/calib_velo_to_cam.txt'
 
