@@ -233,3 +233,12 @@ def generate_colorpc(img, pc, pcimg, corners, debug=False):
     pc_corners = np.array(pc_corners)
 
     return pc_color, pc_corners
+
+def read_calib_file(filepath):
+    data = {}
+    with open(filepath, 'r') as file:
+        for line in file.readlines():
+            if 'P2' in line:
+                calib_values = line.strip().split(' ')
+                camera_matrix = np.array([float(val) for val in calib_values[1:]]).reshape(3, 4)
+    return camera_matrix

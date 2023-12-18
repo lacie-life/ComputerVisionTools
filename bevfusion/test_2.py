@@ -15,7 +15,7 @@ calib_path = '/home/lacie/Datasets/KITTI/objects/train/calib/000100.txt'
 cam2cam_file = '/home/lacie/Datasets/KITTI/objects/simpleKITTI/training/global_calib/calib_cam_to_cam.txt'
 velo2cam_file = '/home/lacie/Datasets/KITTI/objects/simpleKITTI/training/global_calib/calib_velo_to_cam.txt'
 
-output_dir = './images/'
+output_dir = './images-2/'
 
 boundary = {
     "minX": 0,
@@ -44,14 +44,14 @@ maxZ = boundary['maxZ']
 
 # Remove the point out of range x,y,z
 mask = np.where((points[:, 0] >= minX) & (points[:, 0] <= maxX) & (points[:, 1] >= minY) & (
-        points[:, 1] <= maxY) & (points[:, 2] >= minZ) & (points[:, 2] <= maxZ))
+        points[:, 1] <= maxY))
 points_new = points[mask]
-#
-# points_new[:, 2] = points_new[:, 2]
+
+# points_new[:, 2] = points[:, 2]
 
 points_new = points_new[:, :3]
 
-corners = np.float32([[400, 150, 1], [image.shape[1] - 400, 150, 1], [image.shape[1] - 400, image.shape[0] - 20, 1], [400, image.shape[0] - 20, 1]])
+corners = np.float32([[10, 10, 1], [image.shape[1] - 10, 10, 1], [image.shape[1] - 10, image.shape[0] - 10, 1], [10, image.shape[0] - 10, 1]])
 
 vis_img = image.copy()
 # draw to image
@@ -111,26 +111,29 @@ print(pc_corners)
 print("pc_color:")
 print(pc_color)
 
-img_bev = np.zeros((800, 700, 3))
+pc_bev = np.zeros((800, 700, 3))
 for i in pc_color:
-    x_index = min(max(-int(i[0] * 10) + 799, 0), img_bev.shape[0] - 1)
-    y_index = min(max(int(-i[1] * 10) + 350, 0), img_bev.shape[1] - 1)
-    img_bev[x_index, y_index] = [i[5], i[4], i[3]]
+    x_index = min(max(-int(i[0] * 10) + 799, 0), pc_bev.shape[0] - 1)
+    y_index = min(max(int(-i[1] * 10) + 350, 0), pc_bev.shape[1] - 1)
+    pc_bev[x_index, y_index] = [i[5], i[4], i[3]]
     # img_bev[-int(i[0] * 10) + 799, int(-i[1] * 10) + 350] = [i[5], i[4], i[3]]
 
 # Draw pc_corners into img_bev
 bev_corners = []
 for corner in pc_corners:
-    x_index = min(max(-int(corner[0] * 10) + 799, 0), img_bev.shape[0] - 1)
-    y_index = min(max(int(-corner[1] * 10) + 350, 0), img_bev.shape[1] - 1)
-    img_bev[x_index, y_index] = [0, 255, 0]
+    x_index = min(max(-int(corner[0] * 10) + 799, 0), pc_bev.shape[0] - 1)
+    y_index = min(max(int(-corner[1] * 10) + 350, 0), pc_bev.shape[1] - 1)
+    pc_bev[x_index, y_index] = [0, 255, 0]
     print(x_index, y_index)
-    cv2.putText(img_bev, str(x_index) + ',' + str(y_index), (y_index, x_index), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1)
+    cv2.putText(pc_bev, str(x_index) + ',' + str(y_index), (y_index, x_index), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1)
     bev_corners.append([x_index, y_index])
 
-cv2.imwrite(output_dir + 'pointcloud_bev.png', img_bev)
+cv2.imwrite(output_dir + 'pointcloud_bev.png', pc_bev)
 
 bev_corners = np.array(bev_corners)
+x, y, h, w = cv2.boundingRect(np.array(bev_corners))
+
+bev_corners_final = np.array([[x, y], [x + w, y], [x + w, y + h], [x, y + h]])
 original_corners = np.array([[400, 150], [image.shape[1] - 400, 150], [image.shape[1] - 400, image.shape[0] - 20], [400, image.shape[0] - 20]])
 
 
@@ -138,16 +141,16 @@ original_corners = np.array([[400, 150], [image.shape[1] - 400, 150], [image.sha
 print("Original corners:")
 print(original_corners)
 print("BEV corners:")
-print(bev_corners)
+print(bev_corners_final)
 
 
-H, status = cv2.findHomography(np.float32(original_corners), np.float32(bev_corners))
+H, status = cv2.findHomography(np.float32(original_corners), np.float32(bev_corners_final))
 print("Homography matrix:")
 print(H)
 
 # Warp image to BEV
-img_bev = cv2.warpPerspective(image, H, (img_bev.shape[1], img_bev.shape[0]))
-cv2.imwrite(output_dir + 'image_bev.png', img_bev)
+img_bev = cv2.warpPerspective(image, H, (pc_bev.shape[1], pc_bev.shape[0]))
+cv2.imwrite(output_dir + 'img_bev_new.png', img_bev)
 
 
 
