@@ -185,12 +185,13 @@ def project_lidar2img(img, pc, p_matrix, debug=False):
         for idx, i in enumerate(points):
             color = int((pc[idx, 0] / depth_max) * 255)
             cv2.rectangle(img, (int(i[0] - 1), int(i[1] - 1)), (int(i[0] + 1), int(i[1] + 1)), (0, 0, color), -1)
+
         cv2.imshow("Test", img)
 
     return points
 
 
-def generate_colorpc(img, pc, pcimg, debug=False):
+def generate_colorpc(img, pc, pcimg, corners, debug=False):
     """
     Generate the PointCloud with color
     Parameters:
@@ -210,6 +211,25 @@ def generate_colorpc(img, pc, pcimg, debug=False):
             bgr = img[int(i[1]), int(i[0])]
             p_color = [pc[idx][0], pc[idx][1], pc[idx][2], bgr[2], bgr[1], bgr[0]]
             pc_color.append(p_color)
-    pc_color = np.array(pc_color)
+            # # Check image corner
+            # if (i[0] > 400 and i[0] < img.shape[1] - 400) and (i[1] > 150 and i[1] < img.shape[0] - 20):
+            #     cv2.rectangle(img, (int(i[0] - 1), int(i[1] - 1)), (int(i[0] + 1), int(i[1] + 1)), (255, 255, 0), -1)
 
-    return pc_color
+    # Find 4 point closest to the corner
+    print("Corner points 2:")
+    print(corners)
+    pc_corners = []
+    for corner in corners:
+        min_dist = 100000
+        min_point = []
+        for idx, i in enumerate(xy):
+            dist = np.sqrt((i[0] - corner[0]) ** 2 + (i[1] - corner[1]) ** 2)
+            if dist < min_dist:
+                min_dist = dist
+                min_point = pc[idx]
+        pc_corners.append(min_point)
+
+    pc_color = np.array(pc_color)
+    pc_corners = np.array(pc_corners)
+
+    return pc_color, pc_corners
