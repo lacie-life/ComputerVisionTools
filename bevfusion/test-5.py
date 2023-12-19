@@ -1,34 +1,54 @@
+
+import os
 import cv2
+import numpy as np
+from tools import *
 
-# Mouse callback function
-count = 0
-def save_pixel(event, x, y, flags, param):
-    global count
-    if event == cv2.EVENT_LBUTTONDOWN:
-        with open('clicked_pixels.txt', 'a') as f:
-            rgb = image[y, x]
-            f.write(f'{count}: {x}, {y}, RGB: {rgb}\n')
-            count += 1
-        print(f'Saved pixel ({x}, {y}), RGB: {rgb}')
-        cv2.circle(image, (x, y), radius=0, color=(0, 0, 255), thickness=-1)  # BGR color
-        cv2.imshow('image', image)  # Update the image display
+# Specify the directory you want to read from
+image_directory = '/home/lacie/Datasets/KITTI/objects/train/image_2/'
+calib_directory = '/home/lacie/Datasets/KITTI/objects/train/calib/'
 
-# Load the image
-image = cv2.imread('/home/lacie/Github/ComputerVisionTools/bevfusion/images-3/pointcloud_bev.png')
+# Get a list of all files in the directory
+image_files = os.listdir(image_directory)
+#
+# H = np.array([-0.099134, -1.947306, 402.704874,
+#               -0.026298, -4.464355, 868.110926,
+#               -0.000025, -0.005596, 1.000000]).reshape(3, 3)
 
-# Create a window
-cv2.namedWindow('image')
+H = np.array([-0.097938, -1.684271, 355.704874,
+              -0.021413, -3.389828, 676.110926,
+              -0.000025, -0.005596, 1.000000]).reshape(3, 3)
 
-# Set the mouse callback function
-cv2.setMouseCallback('image', save_pixel)
 
-# Display the image
-cv2.imshow('image', image)
+# Iterate over each file
+for image_file in image_files:
+    # Check if the file is an image
+    if image_file.endswith('.png') or image_file.endswith('.jpg') or image_file.endswith('.jpeg'):
+        # Construct the full file path
+        image_path = os.path.join(image_directory, image_file)
+        calib_path = os.path.join(calib_directory, image_file.replace('.png', '.txt'))
 
-# Wait for a key press
-cv2.waitKey(0)
+        # Load image and calibration data
+        image = cv2.imread(image_path)
+        calib_file = calib_path
 
-# Close all windows
-cv2.destroyAllWindows()
+        # Load calibration data
+        P2 = read_calib_file(calib_file)
+        K = P2.reshape(3, 4)[:, :3]
+        D = np.array([-3.691481e-01, 1.968681e-01, 1.353473e-03, 5.677587e-04, -6.770705e-02], dtype=np.float32)
+
+        # Undistort the image
+        image_undistorted = cv2.undistort(image, K, D)
+
+        # # Project image to lidar BEV
+        bev_image = cv2.warpPerspective(image_undistorted, H, (608, 608))
+        #
+        # # Save the BEV image
+        # cv2.imwrite(f'bev_{image_file}', image_bev)
+
+        cv2.imshow('image', image)
+        cv2.imshow('image_undistorted', image_undistorted)
+        cv2.imshow('bev_image', bev_image)
+        cv2.waitKey(0)
 
 

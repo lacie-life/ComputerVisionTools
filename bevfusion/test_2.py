@@ -19,26 +19,26 @@ output_dir = './images-3/'
 
 count = 0
 
-def convert_point2bev(bev_image, point):
-    x_index = min(max(-int(point[0] * 10) + 799, 0), bev_image.shape[0] - 1)
-    y_index = min(max(int(-point[1] * 10) + 350, 0), bev_image.shape[1] - 1)
-    pc_bev[x_index, y_index] = [0, 255, 0]
-    print(x_index, y_index)
-    # Hightlight the corner points
-    cv2.rectangle(bev_image, (y_index - 5, x_index - 5), (y_index + 5, x_index + 5), (0, 255, 0), -1)  # Use green color to highlight
-    cv2.imshow('pc_bev', bev_image)
+# def convert_point2bev(bev_image, point):
+#     x_index = min(max(-int(point[0] * 10) + 799, 0), bev_image.shape[0] - 1)
+#     y_index = min(max(int(-point[1] * 10) + 350, 0), bev_image.shape[1] - 1)
+#     pc_bev[x_index, y_index] = [0, 255, 0]
+#     print(x_index, y_index)
+#     # Hightlight the corner points
+#     cv2.rectangle(bev_image, (y_index - 5, x_index - 5), (y_index + 5, x_index + 5), (0, 255, 0), -1)  # Use green color to highlight
+#     cv2.imshow('pc_bev', bev_image)
 
 def save_pixel(event, x, y, flags, param):
     global count
     if event == cv2.EVENT_LBUTTONDOWN:
-        with open('clicked_pixels.txt', 'a') as f:
+        with open('clicked_pixels_v1.txt', 'a') as f:
             rgb = pcimg[y, x]
             f.write(f'{count}: {x}, {y}, RGB: {rgb}\n')
             count += 1
         print(f'Saved pixel ({x}, {y}), RGB: {rgb}')
         cv2.circle(pcimg, (x, y), radius=0, color=(0, 0, 255), thickness=-1)  # BGR color
         cv2.imshow('pc_projected', pcimg)  # Update the image display
-        convert_point2bev(pc_bev, [x, y])
+        # convert_point2bev(pc_bev, [x, y])
 
 
 boundary = {
@@ -165,6 +165,10 @@ for corner in corner_points:
 
 cv2.imwrite(output_dir + 'pointcloud_projected.png', pcimg)
 
+# cv2.imshow('pc_projected', pcimg)
+# cv2.setMouseCallback('pc_projected', save_pixel)
+# cv2.waitKey(0)
+
 source_points = np.array([[400, 249],
                             [529, 246],
                             [681, 242],
@@ -190,17 +194,17 @@ print(pc_corners)
 print("pc_color:")
 print(pc_color)
 
-pc_bev = np.zeros((800, 700, 3))
+pc_bev = np.zeros((608, 608, 3))
 for i in pc_color:
-    x_index = min(max(-int(i[0] * 10) + 799, 0), pc_bev.shape[0] - 1)
-    y_index = min(max(int(-i[1] * 10) + 350, 0), pc_bev.shape[1] - 1)
+    x_index = min(max(-int(i[0] * 10) + 607, 0), pc_bev.shape[0] - 1)
+    y_index = min(max(int(-i[1] * 10) + 303, 0), pc_bev.shape[1] - 1)
     pc_bev[x_index, y_index] = [i[5], i[4], i[3]]
 
 destination_points = []
 
 for point in pc_corners:
-    x_index = min(max(-int(point[0] * 10) + 799, 0), pc_bev.shape[0] - 1)
-    y_index = min(max(int(-point[1] * 10) + 350, 0), pc_bev.shape[1] - 1)
+    x_index = min(max(-int(point[0] * 10) + 607, 0), pc_bev.shape[0] - 1)
+    y_index = min(max(int(-point[1] * 10) + 303, 0), pc_bev.shape[1] - 1)
     pc_bev[x_index, y_index] = [0, 255, 0]
     print(x_index, y_index)
     # Hightlight the corner points
@@ -224,6 +228,9 @@ im_out = cv2.warpPerspective(image, H, (pc_bev.shape[1], pc_bev.shape[0]))
 cv2.imwrite(output_dir + 'warped_source_image.png', im_out)
 cv2.imshow("Warped Source Image", im_out)
 cv2.waitKey(0)
+
+# Save the homography matrix
+np.savetxt(output_dir + 'homography_matrix.txt', H, fmt='%f')
 
 
 
