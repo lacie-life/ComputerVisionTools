@@ -179,19 +179,10 @@ def project_lidar2img(img, pc, p_matrix, debug=False):
     temp = np.reshape(points[:, dim_norm - 1], (-1, 1))
     points = points[:, :dim_norm] / (np.matmul(temp, np.ones([1, dim_norm])))
 
-    # Plot
-    if debug:
-        depth_max = np.max(pc[:, 0])
-        for idx, i in enumerate(points):
-            color = int((pc[idx, 0] / depth_max) * 255)
-            cv2.rectangle(img, (int(i[0] - 1), int(i[1] - 1)), (int(i[0] + 1), int(i[1] + 1)), (0, 0, color), -1)
-
-        cv2.imshow("Test", img)
-
     return points
 
 
-def generate_colorpc(img, pc, pcimg, corners, debug=False):
+def generate_colorpc(img, pc, pcimg, sample_points, debug=False):
     """
     Generate the PointCloud with color
     Parameters:
@@ -211,15 +202,16 @@ def generate_colorpc(img, pc, pcimg, corners, debug=False):
             bgr = img[int(i[1]), int(i[0])]
             p_color = [pc[idx][0], pc[idx][1], pc[idx][2], bgr[2], bgr[1], bgr[0]]
             pc_color.append(p_color)
-            # # Check image corner
-            # if (i[0] > 400 and i[0] < img.shape[1] - 400) and (i[1] > 150 and i[1] < img.shape[0] - 20):
-            #     cv2.rectangle(img, (int(i[0] - 1), int(i[1] - 1)), (int(i[0] + 1), int(i[1] + 1)), (255, 255, 0), -1)
+
+            # Draw corner area
+            # for corner in sample_points:
+            #     cv2.rectangle(img, (int(corner[0] - 1), int(corner[1] - 1)), (int(corner[0] + 1), int(corner[1] + 1)), (0, 255, 0), -1)
 
     # Find 4 point closest to the corner
     print("Corner points 2:")
-    print(corners)
+    print(sample_points)
     pc_corners = []
-    for corner in corners:
+    for corner in sample_points:
         min_dist = 100000
         min_point = []
         for idx, i in enumerate(xy):
@@ -242,3 +234,5 @@ def read_calib_file(filepath):
                 calib_values = line.strip().split(' ')
                 camera_matrix = np.array([float(val) for val in calib_values[1:]]).reshape(3, 4)
     return camera_matrix
+
+

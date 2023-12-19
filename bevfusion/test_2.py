@@ -7,15 +7,39 @@ from tqdm import tqdm
 from pprint import pprint
 from tools import *
 
-image_path = '/home/lacie/Datasets/KITTI/objects/train/image_2/000100.png'
-pointcloud_path = '/home/lacie/Datasets/KITTI/objects/train/velodyne/000100.bin'
-calib_path = '/home/lacie/Datasets/KITTI/objects/train/calib/000100.txt'
+image_path = '/home/lacie/Datasets/KITTI/objects/train/image_2/000360.png'
+pointcloud_path = '/home/lacie/Datasets/KITTI/objects/train/velodyne/000360.bin'
+calib_path = '/home/lacie/Datasets/KITTI/objects/train/calib/000360.txt'
 
 
 cam2cam_file = '/home/lacie/Datasets/KITTI/objects/simpleKITTI/training/global_calib/calib_cam_to_cam.txt'
 velo2cam_file = '/home/lacie/Datasets/KITTI/objects/simpleKITTI/training/global_calib/calib_velo_to_cam.txt'
 
-output_dir = './images-2/'
+output_dir = './images-3/'
+
+count = 0
+
+def convert_point2bev(bev_image, point):
+    x_index = min(max(-int(point[0] * 10) + 799, 0), bev_image.shape[0] - 1)
+    y_index = min(max(int(-point[1] * 10) + 350, 0), bev_image.shape[1] - 1)
+    pc_bev[x_index, y_index] = [0, 255, 0]
+    print(x_index, y_index)
+    # Hightlight the corner points
+    cv2.rectangle(bev_image, (y_index - 5, x_index - 5), (y_index + 5, x_index + 5), (0, 255, 0), -1)  # Use green color to highlight
+    cv2.imshow('pc_bev', bev_image)
+
+def save_pixel(event, x, y, flags, param):
+    global count
+    if event == cv2.EVENT_LBUTTONDOWN:
+        with open('clicked_pixels.txt', 'a') as f:
+            rgb = pcimg[y, x]
+            f.write(f'{count}: {x}, {y}, RGB: {rgb}\n')
+            count += 1
+        print(f'Saved pixel ({x}, {y}), RGB: {rgb}')
+        cv2.circle(pcimg, (x, y), radius=0, color=(0, 0, 255), thickness=-1)  # BGR color
+        cv2.imshow('pc_projected', pcimg)  # Update the image display
+        convert_point2bev(pc_bev, [x, y])
+
 
 boundary = {
     "minX": 0,
@@ -51,19 +75,61 @@ points_new = points[mask]
 
 points_new = points_new[:, :3]
 
-corners = np.float32([[10, 10, 1], [image.shape[1] - 10, 10, 1], [image.shape[1] - 10, image.shape[0] - 10, 1], [10, image.shape[0] - 10, 1]])
+corners = np.float32([[400, 250, 1], [image.shape[1] - 400, 250, 1], [image.shape[1] - 150, image.shape[0] - 10, 1], [150, image.shape[0] - 10, 1]])
 
 vis_img = image.copy()
 # draw to image
 for corner in corners:
     x, y = int(corner[0]), int(corner[1])
     cv2.rectangle(vis_img, (x - 5, y - 5), (x + 5, y + 5), (0, 255, 0), -1)  # Use green color to highlight
+    cv2.putText(vis_img, str(x) + ',' + str(y), (x, y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1)
 cv2.imwrite(output_dir + 'image_corners.png', vis_img)
+# cv2.imshow('image_corners', vis_img)
+# cv2.waitKey(0)
 
 print("Corners:")
 print(corners)
 
-# Project lidar to image
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# # Project lidar to image
 points_image = project_lidar2img(image, points_new, p_matrix)
 
 pcimg = image.copy()
@@ -79,10 +145,6 @@ bev_area = []
 for idx, i in enumerate(points_image):
     color = int((points_new[idx, 0] / depth_max) * 255)
     cv2.rectangle(pcimg, (int(i[0] - 1), int(i[1] - 1)), (int(i[0] + 1), int(i[1] + 1)), (0, 0, color), -1)
-
-    # # check i is in the corners
-    # if (i[0] > 400 and i[0] < image.shape[1] - 400) and (i[1] > 150 and i[1] < image.shape[0] - 20):
-    #     cv2.rectangle(pcimg, (int(i[0] - 1), int(i[1] - 1)), (int(i[0] + 1), int(i[1] + 1)), (255, 255, 0), -1)
 
 # Find corner points in points_image
 for corner in corners:
@@ -103,8 +165,25 @@ for corner in corner_points:
 
 cv2.imwrite(output_dir + 'pointcloud_projected.png', pcimg)
 
-# Generate PC with Clor & Save
-pc_color, pc_corners = generate_colorpc(image, points_new, points_image, corners)
+source_points = np.array([[400, 249],
+                            [529, 246],
+                            [681, 242],
+                            [844, 249],
+                            [924, 297],
+                            [1006, 329],
+                            [1089, 364],
+                            [984, 362],
+                            [860, 360],
+                            [748, 355],
+                            [636, 353],
+                            [519, 349],
+                            [405, 348],
+                            [288, 352],
+                            [150, 360],
+                            [233, 328],
+                            [321, 287]])
+
+pc_color, pc_corners = generate_colorpc(image, points_new, points_image, source_points)
 
 print("Corner points point cloud:")
 print(pc_corners)
@@ -116,41 +195,94 @@ for i in pc_color:
     x_index = min(max(-int(i[0] * 10) + 799, 0), pc_bev.shape[0] - 1)
     y_index = min(max(int(-i[1] * 10) + 350, 0), pc_bev.shape[1] - 1)
     pc_bev[x_index, y_index] = [i[5], i[4], i[3]]
+
+destination_points = []
+
+for point in pc_corners:
+    x_index = min(max(-int(point[0] * 10) + 799, 0), pc_bev.shape[0] - 1)
+    y_index = min(max(int(-point[1] * 10) + 350, 0), pc_bev.shape[1] - 1)
+    pc_bev[x_index, y_index] = [0, 255, 0]
+    print(x_index, y_index)
+    # Hightlight the corner points
+    # cv2.rectangle(pc_bev, (y_index - 2, x_index - 2), (y_index + 2, x_index + 2), (0, 255, 0), -1)
+    destination_points.append([y_index, x_index])
+
+cv2.imwrite(output_dir + 'pointcloud_bev.png', pc_bev)
+cv2.imshow('pc_bev', pc_bev)
+cv2.waitKey(0)
+
+print(len(destination_points))
+print(destination_points)
+print(len(source_points))
+print(source_points)
+
+# Calculate the homography matrix
+H, status = cv2.findHomography(np.array(source_points), np.array(destination_points))
+
+# Warp source image to destination based on homography
+im_out = cv2.warpPerspective(image, H, (pc_bev.shape[1], pc_bev.shape[0]))
+cv2.imwrite(output_dir + 'warped_source_image.png', im_out)
+cv2.imshow("Warped Source Image", im_out)
+cv2.waitKey(0)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Generate PC with Clor & Save
+# pc_color, pc_corners = generate_colorpc(image, points_new, points_image, corners)
+#
+# print("Corner points point cloud:")
+# print(pc_corners)
+# print("pc_color:")
+# print(pc_color)
+#
+# pc_bev = np.zeros((800, 700, 3))
+# for i in pc_color:
+#     x_index = min(max(-int(i[0] * 10) + 799, 0), pc_bev.shape[0] - 1)
+#     y_index = min(max(int(-i[1] * 10) + 350, 0), pc_bev.shape[1] - 1)
+#     pc_bev[x_index, y_index] = [i[5], i[4], i[3]]
     # img_bev[-int(i[0] * 10) + 799, int(-i[1] * 10) + 350] = [i[5], i[4], i[3]]
 
 # Draw pc_corners into img_bev
-bev_corners = []
-for corner in pc_corners:
-    x_index = min(max(-int(corner[0] * 10) + 799, 0), pc_bev.shape[0] - 1)
-    y_index = min(max(int(-corner[1] * 10) + 350, 0), pc_bev.shape[1] - 1)
-    pc_bev[x_index, y_index] = [0, 255, 0]
-    print(x_index, y_index)
-    cv2.putText(pc_bev, str(x_index) + ',' + str(y_index), (y_index, x_index), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1)
-    bev_corners.append([x_index, y_index])
+# bev_corners = []
+# for corner in pc_corners:
+#     x_index = min(max(-int(corner[0] * 10) + 799, 0), pc_bev.shape[0] - 1)
+#     y_index = min(max(int(-corner[1] * 10) + 350, 0), pc_bev.shape[1] - 1)
+#     pc_bev[x_index, y_index] = [0, 255, 0]
+#     print(x_index, y_index)
+#     bev_corners.append([x_index, y_index])
+#
+# cv2.imwrite(output_dir + 'pointcloud_bev.png', pc_bev)
+# cv2.imshow('pc_bev', pc_bev)
+# cv2.waitKey(0)
 
-cv2.imwrite(output_dir + 'pointcloud_bev.png', pc_bev)
-
-bev_corners = np.array(bev_corners)
-x, y, h, w = cv2.boundingRect(np.array(bev_corners))
-
-bev_corners_final = np.array([[x, y], [x + w, y], [x + w, y + h], [x, y + h]])
-original_corners = np.array([[400, 150], [image.shape[1] - 400, 150], [image.shape[1] - 400, image.shape[0] - 20], [400, image.shape[0] - 20]])
-
-
-# Calculate the homography matrix from image to BEV
-print("Original corners:")
-print(original_corners)
-print("BEV corners:")
-print(bev_corners_final)
-
-
-H, status = cv2.findHomography(np.float32(original_corners), np.float32(bev_corners_final))
-print("Homography matrix:")
-print(H)
-
-# Warp image to BEV
-img_bev = cv2.warpPerspective(image, H, (pc_bev.shape[1], pc_bev.shape[0]))
-cv2.imwrite(output_dir + 'img_bev_new.png', img_bev)
 
 
 
