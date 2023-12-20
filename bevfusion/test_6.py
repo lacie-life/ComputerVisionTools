@@ -105,11 +105,16 @@ for image_file in image_files:
         # # Save the BEV image
         # cv2.imwrite(f'bev_{image_file}', image_bev)
 
+        pc_bev = pc_bev.astype(np.uint8)
+
+        merge_img = cv2.addWeighted(bev_image, 0.5, pc_bev, 0.5, 0)
+
         cv2.imshow('image', image)
         cv2.imshow('image_undistorted', image_undistorted)
         cv2.imshow('bev_image', bev_image)
         cv2.imshow('inv_bev_image', inv_bev_image)
         cv2.imshow('pc_bev', pc_bev.astype(np.uint8))
+        cv2.imshow('merge_img', merge_img.astype(np.uint8))
         cv2.waitKey(0)
 
 
