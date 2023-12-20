@@ -42,6 +42,7 @@ for image_file in image_files:
 
         # # Project image to lidar BEV
         bev_image = cv2.warpPerspective(image_undistorted, H, (608, 608))
+        inv_bev_image = cv2.warpPerspective(bev_image, np.linalg.inv(H), (1242, 375))
         #
         # # Save the BEV image
         # cv2.imwrite(f'bev_{image_file}', image_bev)
@@ -49,6 +50,7 @@ for image_file in image_files:
         cv2.imshow('image', image)
         cv2.imshow('image_undistorted', image_undistorted)
         cv2.imshow('bev_image', bev_image)
+        cv2.imshow('inv_bev_image', inv_bev_image)
         cv2.waitKey(0)
 
 

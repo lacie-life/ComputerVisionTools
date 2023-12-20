@@ -182,7 +182,7 @@ def project_lidar2img(img, pc, p_matrix, debug=False):
     return points
 
 
-def generate_colorpc(img, pc, pcimg, sample_points, debug=False):
+def generate_colorpc(img, pc, pcimg, sample_points=[], debug=False):
     """
     Generate the PointCloud with color
     Parameters:
@@ -207,24 +207,26 @@ def generate_colorpc(img, pc, pcimg, sample_points, debug=False):
             # for corner in sample_points:
             #     cv2.rectangle(img, (int(corner[0] - 1), int(corner[1] - 1)), (int(corner[0] + 1), int(corner[1] + 1)), (0, 255, 0), -1)
 
-    # Find 4 point closest to the corner
-    print("Corner points 2:")
-    print(sample_points)
-    pc_corners = []
-    for corner in sample_points:
-        min_dist = 100000
-        min_point = []
-        for idx, i in enumerate(xy):
-            dist = np.sqrt((i[0] - corner[0]) ** 2 + (i[1] - corner[1]) ** 2)
-            if dist < min_dist:
-                min_dist = dist
-                min_point = pc[idx]
-        pc_corners.append(min_point)
+    if len(sample_points) != 0:
+        # Find 4 point closest to the corner
+        print("Corner points 2:")
+        print(sample_points)
+        pc_corners = []
+        for corner in sample_points:
+            min_dist = 100000
+            min_point = []
+            for idx, i in enumerate(xy):
+                dist = np.sqrt((i[0] - corner[0]) ** 2 + (i[1] - corner[1]) ** 2)
+                if dist < min_dist:
+                    min_dist = dist
+                    min_point = pc[idx]
+            pc_corners.append(min_point)
 
-    pc_color = np.array(pc_color)
-    pc_corners = np.array(pc_corners)
+        pc_color = np.array(pc_color)
+        pc_corners = np.array(pc_corners)
 
-    return pc_color, pc_corners
+        return pc_color, pc_corners
+    return pc_color
 
 def read_calib_file(filepath):
     data = {}
