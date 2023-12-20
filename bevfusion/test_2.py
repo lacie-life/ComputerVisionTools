@@ -17,6 +17,25 @@ velo2cam_file = '/home/lacie/Datasets/KITTI/objects/simpleKITTI/training/global_
 
 output_dir = './images-3/'
 
+source_points = np.array([[400, 249],
+                            [529, 246],
+                            [681, 242],
+                            [844, 249],
+                            [924, 297],
+                            [1006, 329],
+                            [1089, 364],
+                            [984, 362],
+                            [860, 360],
+                            [748, 355],
+                            [636, 353],
+                            [519, 349],
+                            [405, 348],
+                            [288, 352],
+                            [150, 360],
+                            [233, 328],
+                            [321, 287]])
+
+
 count = 0
 
 # def convert_point2bev(bev_image, point):
@@ -79,9 +98,14 @@ corners = np.float32([[400, 250, 1], [image.shape[1] - 400, 250, 1], [image.shap
 
 vis_img = image.copy()
 # draw to image
-for corner in corners:
-    x, y = int(corner[0]), int(corner[1])
-    cv2.rectangle(vis_img, (x - 5, y - 5), (x + 5, y + 5), (0, 255, 0), -1)  # Use green color to highlight
+# for corner in corners:
+#     x, y = int(corner[0]), int(corner[1])
+#     cv2.rectangle(vis_img, (x - 5, y - 5), (x + 5, y + 5), (0, 255, 0), -1)  # Use green color to highlight
+#     cv2.putText(vis_img, str(x) + ',' + str(y), (x, y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1)
+
+for point in source_points:
+    x, y = int(point[0]), int(point[1])
+    cv2.rectangle(vis_img, (x - 5, y - 5), (x + 5, y + 5), (0, 0, 255), -1)  # Use red color to highlight
     cv2.putText(vis_img, str(x) + ',' + str(y), (x, y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1)
 cv2.imwrite(output_dir + 'image_corners.png', vis_img)
 # cv2.imshow('image_corners', vis_img)
@@ -160,32 +184,15 @@ print(len(corner_points))
 print(corner_points)
 
 # Draw corner points
-for corner in corner_points:
-    cv2.rectangle(pcimg, (int(corner[0] - 1), int(corner[1] - 1)), (int(corner[0] + 1), int(corner[1] + 1)), (0, 255, 0), -1)
+for point in source_points:
+    x, y = int(point[0]), int(point[1])
+    cv2.circle(pcimg, (x, y), radius=1, color=(0, 255, 0), thickness=2)  # BGR color
 
 cv2.imwrite(output_dir + 'pointcloud_projected.png', pcimg)
 
 # cv2.imshow('pc_projected', pcimg)
 # cv2.setMouseCallback('pc_projected', save_pixel)
 # cv2.waitKey(0)
-
-source_points = np.array([[400, 249],
-                            [529, 246],
-                            [681, 242],
-                            [844, 249],
-                            [924, 297],
-                            [1006, 329],
-                            [1089, 364],
-                            [984, 362],
-                            [860, 360],
-                            [748, 355],
-                            [636, 353],
-                            [519, 349],
-                            [405, 348],
-                            [288, 352],
-                            [150, 360],
-                            [233, 328],
-                            [321, 287]])
 
 pc_color, pc_corners = generate_colorpc(image, points_new, points_image, source_points)
 
@@ -208,11 +215,11 @@ for point in pc_corners:
     pc_bev[x_index, y_index] = [0, 255, 0]
     print(x_index, y_index)
     # Hightlight the corner points
-    # cv2.rectangle(pc_bev, (y_index - 2, x_index - 2), (y_index + 2, x_index + 2), (0, 255, 0), -1)
+    cv2.rectangle(pc_bev, (y_index - 2, x_index - 2), (y_index + 2, x_index + 2), (0, 255, 0), -1)
     destination_points.append([y_index, x_index])
 
 cv2.imwrite(output_dir + 'pointcloud_bev.png', pc_bev)
-cv2.imshow('pc_bev', pc_bev)
+cv2.imshow('pc_bev', pc_bev.astype(np.uint8))
 cv2.waitKey(0)
 
 print(len(destination_points))
