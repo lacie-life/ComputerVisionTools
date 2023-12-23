@@ -6,7 +6,6 @@ from scipy.spatial.transform import Rotation as R
 def project_to_image(points_3d, P):
     """Project 3D points to 2D image points."""
     num_points = points_3d.shape[1]
-    # points_3d_h = np.vstack([points_3d, np.ones((1, num_points))])
     points_3d_h = np.vstack([points_3d[:3, :], np.ones((1, points_3d.shape[1]))])
     points_2d_h = np.dot(P, points_3d_h)
     points_2d = points_2d_h[:2, :] / points_2d_h[2, :]
@@ -43,6 +42,7 @@ def convert_to_kitti_format(json_file, output_file):
                     quat_z = float(val[5])
                     quat_w = float(val[6])
                     roll, pitch, yaw = R.from_quat([quat_x, quat_y, quat_z, quat_w]).as_euler("xyz", degrees=True)
+                    yaw = np.arctan2(np.sin(yaw), np.cos(yaw))
 
                     location = np.array(
                         [
@@ -67,7 +67,9 @@ def convert_to_kitti_format(json_file, output_file):
 
                     bbox_2d = compute_2d_bbox(points_2d)
 
-                    f_out.write(f"{object_data['object_data']['type']} 0.0 0 -10.0 {bbox_2d[0]} {bbox_2d[1]} {bbox_2d[2]} {bbox_2d[3]} {h} {w} {l} {location[0][0]} {location[1][0]} {location[2][0]} {yaw} 0\n")
+                    alpha = -np.arctan2(-points_2d[0, :].mean(), points_2d[1, :].mean()) + yaw
+
+                    f_out.write(f"{object_data['object_data']['type']} 0.0 0 {alpha} {bbox_2d[0]} {bbox_2d[1]} {bbox_2d[2]} {bbox_2d[3]} {h} {w} {l} {location[0][0]} {location[1][0]} {location[2][0]} {yaw} 0\n")
 
 json_file = '1646667310_053239541_s110_lidar_ouster_south.json'
 output_file = 'kitti_format_data.txt'
