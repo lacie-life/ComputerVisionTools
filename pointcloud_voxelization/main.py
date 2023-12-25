@@ -94,12 +94,6 @@ for mask in [mask_below, mask_above]:
     # Remove duplicates
     voxel_indices = np.unique(voxel_indices, axis=0)
 
-    # # Optionally, create a 3D array to represent the voxel grid
-    # voxel_grid = np.zeros((int((maxX-minX)/voxel_size), int((maxY-minY)/voxel_size), int((maxZ-minZ)/voxel_size)))
-    # voxel_grid[voxel_indices[:, 0], voxel_indices[:, 1], voxel_indices[:, 2]] = 1
-    #
-    # print(voxel_grid.shape)
-
     voxel_pcd = o3d.geometry.PointCloud()
 
     voxel_center = voxel_indices * voxel_size + voxel_size / 2 + [minX, minY, minZ]
