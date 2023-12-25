@@ -64,61 +64,101 @@ mask_above = points_new[:, 2] >= midZ
 
 start = time()
 
-voxel_pcds = []
-
 colors = [[0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]
+
+# Define the voxel size and grid range
+voxel_size = np.array([0.5, 0.5, 0.5])  # Example voxel size
+grid_range = np.array([0, -25, -2.73, 50, 25, 1.27])  # Example grid range
 
 index = 0
 
 bv_images = []
 
-for mask in [mask_below, mask_above]:
+all_voxels = []
+all_coordinates = []
+all_num_points_per_voxel = []
+
+voxel_pcds = []
+
+for i, mask in enumerate([mask_below, mask_above]):
 
     # Translate points to positive space
     point_masked = points_new[mask]
 
     bv_image = make_BVFeature(point_masked)
+    #
+    # img = np.transpose(bv_image, (1, 2, 0))
+    # cv2.imwrite(output_dir + str(index) + '.png', img)
+    # cv2.imshow('image', img)
+    # cv2.waitKey(0)
 
-    img = np.transpose(bv_image, (1, 2, 0))
-    cv2.imwrite(output_dir + str(index) + '.png', img)
-    cv2.imshow('image', img)
-    cv2.waitKey(0)
+    voxels, coordinates, num_points_per_voxel = voxelize(point_masked, voxel_size, grid_range, max_points_in_voxel=35, max_num_voxels=20000)
 
-    point_masked[:, :3] -= [minX, minY, minZ]
+    all_voxels.append(voxels)
+    all_coordinates.append(coordinates)
+    all_num_points_per_voxel.append(num_points_per_voxel)
 
-    # Convert to voxel indices
-    voxel_indices = np.floor(point_masked[:, :3] / voxel_size).astype(np.int32)
+    print('voxels: ', voxels.shape)
+    print('coordinates: ', coordinates.shape)
+    print('num_points_per_voxel: ', num_points_per_voxel.shape)
 
-    voxel_indices = np.clip(voxel_indices, a_min=0, a_max=np.array([int((maxX-minX)/voxel_size)-1, int((maxY-minY)/voxel_size)-1, int((maxZ-minZ)/voxel_size)-1]))
-
-    # Remove duplicates
-    voxel_indices = np.unique(voxel_indices, axis=0)
-
-    voxel_pcd = o3d.geometry.PointCloud()
-
-    voxel_center = voxel_indices * voxel_size + voxel_size / 2 + [minX, minY, minZ]
-    voxel_pcd.points = o3d.utility.Vector3dVector(voxel_center)
-    voxel_pcd.paint_uniform_color(colors[index])
-    index += 1
-
-    print(voxel_pcd.points)
-
-    voxel_pcds.append(voxel_pcd)
     bv_images.append(bv_image)
 
 end = time()
 
 # points_new += [minX, minY, minZ]
 
-pcd = o3d.geometry.PointCloud()
-pcd.points = o3d.utility.Vector3dVector(points_new[:, :3])
-pcd.paint_uniform_color([1.0, 0.0, 0.0])
-
-voxel_pcds.append(pcd)
-
-o3d.visualization.draw_geometries(voxel_pcds)
+# pcd = o3d.geometry.PointCloud()
+# pcd.points = o3d.utility.Vector3dVector(points_new[:, :3])
+# pcd.paint_uniform_color([1.0, 0.0, 0.0])
+#
+# voxel_pcds.append(pcd)
+#
+# o3d.visualization.draw_geometries(voxel_pcds)
 
 print('Time: ', end-start)
+
+all_voxel_pcd = o3d.geometry.PointCloud()
+
+colors = [[0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]
+
+color_index = 0
+
+# Calculate the voxel centers
+voxel_centers_1 = []
+voxel_centers_2 = []
+for voxels in all_voxels:
+    if color_index == 0:
+        for voxel in voxels:
+            voxel_center = voxel[:, :3] * voxel_size + voxel_size / 2
+            voxel_centers_1.append(voxel_center)
+    else:
+        for voxel in voxels:
+            voxel_center = voxel[:, :3] * voxel_size + voxel_size / 2
+            voxel_centers_2.append(voxel_center)
+    color_index += 1
+
+# Create point cloud for voxel centers 1
+voxel_centers_1 = np.concatenate(voxel_centers_1, axis=0)
+voxel_pcd_1 = o3d.geometry.PointCloud()
+voxel_pcd_1.points = o3d.utility.Vector3dVector(voxel_centers_1)
+voxel_pcd_1.paint_uniform_color(colors[0])
+
+# Create point cloud for voxel centers 2
+voxel_centers_2 = np.concatenate(voxel_centers_2, axis=0)
+voxel_pcd_2 = o3d.geometry.PointCloud()
+voxel_pcd_2.points = o3d.utility.Vector3dVector(voxel_centers_2)
+voxel_pcd_2.paint_uniform_color(colors[1])
+
+# Create point cloud for all voxel centers
+# all_voxel_pcd.append(voxel_pcd_1)
+# all_voxel_pcd.append(voxel_pcd_2)
+
+o3d.visualization.draw_geometries([voxel_pcd_1, voxel_pcd_2])
+
+
+
+
 
 
 
