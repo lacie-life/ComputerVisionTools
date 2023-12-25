@@ -106,19 +106,7 @@ for i, mask in enumerate([mask_below, mask_above]):
 
 end = time()
 
-# points_new += [minX, minY, minZ]
-
-# pcd = o3d.geometry.PointCloud()
-# pcd.points = o3d.utility.Vector3dVector(points_new[:, :3])
-# pcd.paint_uniform_color([1.0, 0.0, 0.0])
-#
-# voxel_pcds.append(pcd)
-#
-# o3d.visualization.draw_geometries(voxel_pcds)
-
 print('Time: ', end-start)
-
-all_voxel_pcd = o3d.geometry.PointCloud()
 
 colors = [[0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]
 
@@ -129,10 +117,12 @@ voxel_centers_1 = []
 voxel_centers_2 = []
 for voxels in all_voxels:
     if color_index == 0:
+        print('voxels: ', voxels.shape)
         for voxel in voxels:
             voxel_center = voxel[:, :3] * voxel_size + voxel_size / 2
             voxel_centers_1.append(voxel_center)
     else:
+        print('voxels: ', voxels.shape)
         for voxel in voxels:
             voxel_center = voxel[:, :3] * voxel_size + voxel_size / 2
             voxel_centers_2.append(voxel_center)
@@ -150,9 +140,11 @@ voxel_pcd_2 = o3d.geometry.PointCloud()
 voxel_pcd_2.points = o3d.utility.Vector3dVector(voxel_centers_2)
 voxel_pcd_2.paint_uniform_color(colors[1])
 
-# Create point cloud for all voxel centers
-# all_voxel_pcd.append(voxel_pcd_1)
-# all_voxel_pcd.append(voxel_pcd_2)
+pcd = o3d.geometry.PointCloud()
+pcd.points = o3d.utility.Vector3dVector(points_new[:, :3])
+pcd.paint_uniform_color([1.0, 0.0, 0.0])
+
+o3d.visualization.draw_geometries([pcd])
 
 o3d.visualization.draw_geometries([voxel_pcd_1, voxel_pcd_2])
 
