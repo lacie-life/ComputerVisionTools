@@ -17,23 +17,73 @@ velo2cam_file = '/home/lacie/Datasets/KITTI/objects/simpleKITTI/training/global_
 
 output_dir = './images-3/'
 
-source_points = np.array([[400, 249],
-                            [529, 246],
-                            [681, 242],
-                            [844, 249],
-                            [924, 297],
-                            [1006, 329],
-                            [1089, 364],
-                            [984, 362],
-                            [860, 360],
-                            [748, 355],
-                            [636, 353],
-                            [519, 349],
-                            [405, 348],
-                            [288, 352],
-                            [150, 360],
-                            [233, 328],
-                            [321, 287]])
+# source_points = np.array([[400, 249],
+#                             [529, 246],
+#                             [681, 242],
+#                             [844, 249],
+#                             [924, 297],
+#                             [1006, 329],
+#                             [1089, 364],
+#                             [984, 362],
+#                             [860, 360],
+#                             [748, 355],
+#                             [636, 353],
+#                             [519, 349],
+#                             [405, 348],
+#                             [288, 352],
+#                             [150, 360],
+#                             [233, 328],
+#                             [321, 287]])
+
+# source_points = np.array([[87, 356],
+#                           [117, 243],
+#                           [71, 247],
+#                           [223, 236],
+#                           [447, 224],
+#                           [552, 222],
+#                           [657, 222],
+#                           [774, 224],
+#                           [925, 247],
+#                           [1055, 268],
+#                           [1103, 291],
+#                           [1167, 341],
+#                           [1051, 360],
+#                           [927, 365],
+#                           [800, 357],
+#                           [588, 341],
+#                           [420, 347],
+#                           [261, 349],
+#                           [86, 353],
+#                           [49, 316],
+#                           [65, 267]])
+
+source_points = np.array([[15, 237],
+                          [94, 233],
+                          [198, 220],
+                          [321, 212],
+                          [428, 211],
+                          [512, 211],
+                          [619, 213],
+                          [738, 212],
+                          [842, 213],
+                          [949, 221],
+                          [1036, 226],
+                          [1135, 238],
+                          [1226, 247],
+                          [1221, 292],
+                          [1220, 321],
+                          [1200, 361],
+                          [1104, 366],
+                          [960, 368],
+                          [822, 366],
+                          [656, 361],
+                          [469, 359],
+                          [362, 359],
+                          [237, 357],
+                          [98, 360],
+                          [21, 350],
+                          [15, 319],
+                          [14, 271]])
 
 
 count = 0
@@ -50,7 +100,7 @@ count = 0
 def save_pixel(event, x, y, flags, param):
     global count
     if event == cv2.EVENT_LBUTTONDOWN:
-        with open('clicked_pixels_v1.txt', 'a') as f:
+        with open('clicked_pixels_v3.txt', 'a') as f:
             rgb = pcimg[y, x]
             f.write(f'{count}: {x}, {y}, RGB: {rgb}\n')
             count += 1
@@ -195,7 +245,7 @@ cv2.imwrite(output_dir + 'pointcloud_projected.png', pcimg)
 # cv2.waitKey(0)
 
 pc_color, pc_corners = generate_colorpc(image, points_new, points_image, source_points)
-
+#
 print("Corner points point cloud:")
 print(pc_corners)
 print("pc_color:")
