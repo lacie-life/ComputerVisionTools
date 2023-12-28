@@ -2,6 +2,7 @@ import os
 import json
 import numpy as np
 from scipy.spatial.transform import Rotation as R
+import cv2
 
 def project_to_image(points_3d, P):
     """Project 3D points to 2D image points."""
@@ -19,23 +20,23 @@ def compute_2d_bbox(points_2d):
     ymax = np.max(points_2d[1, :])
     return [xmin, ymin, xmax, ymax]
 
-def convert_to_kitti_format(json_file, output_file):
+def convert_to_kitti_format(json_file, output_file, img):
     with open(json_file, 'r') as f:
         data = json.load(f)
 
-    P = np.array(data['openlabel']['streams']['s110_camera_basler_south2_8mm']['stream_properties']['intrinsics_pinhole']['camera_matrix_3x4'])
-    T_lidar_to_camera = np.array(data['openlabel']['coordinate_systems']['s110_camera_basler_south2_8mm']['pose_wrt_parent']['matrix4x4']).reshape(4, 4)
-    image_width = data['openlabel']['streams']['s110_camera_basler_south2_8mm']['stream_properties']['intrinsics_pinhole']['width_px']
-    image_height = data['openlabel']['streams']['s110_camera_basler_south2_8mm']['stream_properties']['intrinsics_pinhole']['height_px']
+    P = np.array(data['openlabel']['streams']['s110_camera_basler_south1_8mm']['stream_properties']['intrinsics_pinhole']['camera_matrix_3x4'])
+    T_lidar_to_camera = np.array(data['openlabel']['coordinate_systems']['s110_camera_basler_south1_8mm']['pose_wrt_parent']['matrix4x4']).reshape(4, 4)
+    image_width = data['openlabel']['streams']['s110_camera_basler_south1_8mm']['stream_properties']['intrinsics_pinhole']['width_px']
+    image_height = data['openlabel']['streams']['s110_camera_basler_south1_8mm']['stream_properties']['intrinsics_pinhole']['height_px']
 
     with open(output_file, 'w') as f_out:
         for frame in data['openlabel']['frames'].values():
             for object_id, object_data in frame['objects'].items():
                 val = object_data['object_data']['cuboid'].get('val', None)
                 if val:
-                    h = float(val[7])
+                    l = float(val[7])
                     w = float(val[8])
-                    l = float(val[9])
+                    h = float(val[9])
 
                     quat_x = float(val[3])
                     quat_y = float(val[4])
@@ -67,13 +68,24 @@ def convert_to_kitti_format(json_file, output_file):
 
                     bbox_2d = compute_2d_bbox(points_2d)
 
+                    # for point in points_2d.T:
+                    #     cv2.circle(img, (int(point[0]), int(point[1])), 2, (0, 255, 0), -1)
+
                     alpha = -np.arctan2(-points_2d[0, :].mean(), points_2d[1, :].mean()) + yaw
 
                     f_out.write(f"{object_data['object_data']['type']} 0.0 0 {alpha} {bbox_2d[0]} {bbox_2d[1]} {bbox_2d[2]} {bbox_2d[3]} {h} {w} {l} {location[0][0]} {location[1][0]} {location[2][0]} {yaw} 0\n")
 
+                    cv2.rectangle(img, (int(bbox_2d[0]), int(bbox_2d[1])), (int(bbox_2d[2]), int(bbox_2d[3])), (0, 255, 0), 2)
+                    cv2.imshow('img', img)
+                    cv2.waitKey(0)
+
 json_file = '1646667310_053239541_s110_lidar_ouster_south.json'
 output_file = 'kitti_format_data.txt'
-convert_to_kitti_format(json_file, output_file)
+img_path = '1646667310_044372291_s110_camera_basler_south1_8mm.jpg'
+
+img = cv2.imread(img_path)
+
+convert_to_kitti_format(json_file, output_file, img)
 
 
 
