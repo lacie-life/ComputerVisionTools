@@ -17,9 +17,9 @@ import math
 # }
 boundary = {
     "minX": 0,
-    "maxX": 70,
-    "minY": -35,
-    "maxY": 35,
+    "maxX": 100,
+    "minY": -50,
+    "maxY": 50,
     "minZ": -10,
     "maxZ": -2.5
 }
@@ -139,18 +139,19 @@ def get_corners(x, y, w, l, yaw):
 
 
 # send parameters in bev image coordinates format
-def drawRotatedBox(img, x, y, w, l, yaw, color):
+def drawRotatedBox(img, x, y, w, l, yaw, color, c):
     img_new = img.astype(np.uint8).copy()
-    cv2.circle(img_new, (int(x), int(y)), radius=10, color=(0, 0, 255), thickness=2)
-    # bev_corners = get_corners(x, y, w, l, yaw)
+    cv2.circle(img_new, (int(x), int(y)), radius=2, color=(0, 0, 255), thickness=1)
+    cv2.putText(img_new, str(c), (int(x), int(y)), cv2.FONT_HERSHEY_SIMPLEX, 0.3, (0, 0, 255), 1)
+    bev_corners = get_corners(x, y, w, l, yaw)
 
-    # corners_int = bev_corners.reshape(-1, 1, 2).astype(int)
+    corners_int = bev_corners.reshape(-1, 1, 2).astype(int)
 
-    # cv2.polylines(img_new, [corners_int], True, color, 2)
+    cv2.polylines(img_new, [corners_int], True, color, 2)
 
-    # corners_int = bev_corners.reshape(-1, 2)
+    corners_int = bev_corners.reshape(-1, 2)
 
-    # cv2.line(img_new, (int(corners_int[0, 0]), int(corners_int[0, 1])), (int(corners_int[3, 0]), int(corners_int[3, 1])), (255, 255, 0), 2)
+    cv2.line(img_new, (int(corners_int[0, 0]), int(corners_int[0, 1])), (int(corners_int[3, 0]), int(corners_int[3, 1])), (255, 255, 0), 2)
 
     return img_new
 

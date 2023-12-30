@@ -50,6 +50,8 @@ def convert_to_kitti_format(json_file, output_file, img, rgb_map):
     data['openlabel']['streams']['s110_camera_basler_south2_8mm']['stream_properties']['intrinsics_pinhole'][
         'height_px']
 
+    print("=====================================================")
+
     with open(output_file, 'w') as f_out:
         for frame in data['openlabel']['frames'].values():
             for object_id, object_data in frame['objects'].items():
@@ -63,8 +65,8 @@ def convert_to_kitti_format(json_file, output_file, img, rgb_map):
                     quat_y = float(val[4])
                     quat_z = float(val[5])
                     quat_w = float(val[6])
-                    roll, pitch, yaw = R.from_quat([quat_x, quat_y, quat_z, quat_w]).as_euler("xyz", degrees=True)
-                    yaw = np.arctan2(np.sin(yaw), np.cos(yaw))
+                    # rotation_yaw = R.from_quat([quat_x, quat_y, quat_z, quat_w]).as_euler("xyz", degrees=False)[2]
+                    rotation_yaw = R.from_quat([quat_x, quat_y, quat_z, quat_w]).as_euler("zyx", degrees=False)[1]
 
                     location = np.array(
                         [
@@ -84,14 +86,12 @@ def convert_to_kitti_format(json_file, output_file, img, rgb_map):
                                            location[2][0] - h / 2, location[2][0] + h / 2, location[2][0] + h / 2,
                                            location[2][0] + h / 2, location[2][0] + h / 2]])
 
-                    print(points_3d.shape)
-                    print(points_3d)
                     points_3d = np.vstack([points_3d, np.ones((1, points_3d.shape[1]))])
                     points_3d = np.dot(T_lidar_to_camera, points_3d)
 
-                    location = np.vstack([location, np.ones((1, location.shape[1]))])
-                    location = np.dot(T_lidar_to_camera, location)
-
+                    # location_h = np.append(location, 1)
+                    # location_camera = np.dot(T_lidar_to_camera, location_h)
+                    #
                     print(location)
 
                     points_2d = project_to_image(points_3d, P)
@@ -100,35 +100,30 @@ def convert_to_kitti_format(json_file, output_file, img, rgb_map):
                             points_2d[1, :] < 0) or np.any(points_2d[1, :] > image_height):
                         continue  # Skip this object if it's not in the camera's FOV
 
+                    for point_2d in points_2d.T:
+                        cv2.circle(img, tuple(point_2d.astype(int)), 5, (0, 0, 255), -1)
+
                     bbox_2d = compute_2d_bbox(points_2d)
 
-                    alpha = -np.arctan2(-points_2d[0, :].mean(), points_2d[1, :].mean()) + yaw
+                    alpha = -np.arctan2(-points_2d[0, :].mean(), points_2d[1, :].mean()) + rotation_yaw
 
                     f_out.write(
-                        f"{object_data['object_data']['type']} 0.0 0 {alpha} {bbox_2d[0]} {bbox_2d[1]} {bbox_2d[2]} {bbox_2d[3]} {h} {w} {l} {location[0][0]} {location[1][0]} {location[2][0]} {yaw} 0\n")
+                        f"{object_data['object_data']['type']} 0.0 0 {alpha} {bbox_2d[0]} {bbox_2d[1]} {bbox_2d[2]} {bbox_2d[3]} {h} {w} {l} {location[0][0]} {location[1][0]} {location[2][0]} {rotation_yaw} 0\n")
 
                     cv2.rectangle(img, (int(bbox_2d[0]), int(bbox_2d[1])), (int(bbox_2d[2]), int(bbox_2d[3])),
                                   color=(255, 0, 0), thickness=2)
                     # cv2.imshow("gs",img)
                     # cv2.imshow("rgb_map", rgb_map)
                     # cv2.waitKey(0)
-    return img
 
+    print("=====================================================")
 
-# json_origin_path = '/mnt/hdd/A9_dataset/R02/a9_dataset_r02_s04/labels_point_clouds/s110_lidar_ouster_south'
-# json_file_names = natsort.natsorted(os.listdir(json_origin_path))
-# save_txt_path = '/home/jiwon/3d_object_detection/Complex-YOLOv4-Pytorch/dataset/A9_dataset/training/label_2'
+    return img, T_lidar_to_camera
 
-
-# for json_file_name in json_file_names:
-#     json_file_path = os.path.join(json_origin_path,json_file_name)
-#     output_file = os.path.join(save_txt_path,json_file_name[:-5]+".txt")
-#     convert_to_kitti_format(json_file_path, output_file)
-
-json_file = '/mnt/hdd/A9_dataset/R02/a9_dataset_r02_s01/labels_point_clouds/s110_lidar_ouster_south/1646667310_150192886_s110_lidar_ouster_south.json'
+json_file = '/home/lacie/Github/ComputerVisionTools/openlabel2kitti/test_2/1646667315_454719936_s110_lidar_ouster_south.json'
 output_file = 'kitti_format_data.txt'
-img_path = "/mnt/hdd/A9_dataset/R02/a9_dataset_r02_s01/images/s110_camera_basler_south2_8mm/1646667310_139995078_s110_camera_basler_south2_8mm.jpg"
-pc_path = "/mnt/hdd/A9_dataset/R02/a9_dataset_r02_s01/point_clouds/s110_lidar_ouster_south/1646667310_150192886_s110_lidar_ouster_south.pcd"
+img_path = "/home/lacie/Github/ComputerVisionTools/openlabel2kitti/test_2/1646667315_563367657_s110_camera_basler_south2_8mm.jpg"
+pc_path = "/home/lacie/Github/ComputerVisionTools/openlabel2kitti/test_2/1646667315_454719936_s110_lidar_ouster_south.pcd"
 
 pc = PointCloud.from_path(pc_path).numpy()
 pc = pc[:, :4]
@@ -141,21 +136,38 @@ rgb_map = np.transpose(rgb_map, (1, 2, 0))
 
 img = cv2.imread(img_path)
 
-img = convert_to_kitti_format(json_file, output_file, img, rgb_map)
+img, L2CTrans = convert_to_kitti_format(json_file, output_file, img, rgb_map)
+
+L2CTrans_Fake = np.array([
+    [0.641509,
+     -0.766975,
+     0.0146997,
+     1.99131],
+    [-0.258939,
+     -0.234538,
+     -0.936986,
+     1.21464],
+    [0.722092,
+     0.597278,
+     -0.349058,
+     -1.50021],
+    [0.0,
+     0.0,
+     0.0,
+     1.0]])
 
 print(rgb_map.shape)
 
-objs = read_label("/home/jiwon/3d_object_detection/tum-traffic-dataset-dev-kit/src/visualization/kitti_format_data.txt")
+objs = read_label("/home/lacie/Github/ComputerVisionTools/openlabel2kitti/kitti_format_data.txt")
 
 labels, _ = read_labels_for_bevbox(objs)
 
-
-labels[:, 1:] = camera_to_lidar_box(labels[:, 1:])  # convert rect cam to velo cord
-
+labels[:, 1:] = camera_to_lidar_box(labels[:, 1:], L2CTrans)  # convert rect cam to velo cord
 
 target = build_yolo_target(labels)
 
 n_target = len(target)
+print(n_target)
 targets = torch.zeros((n_target, 8))
 
 targets[:, 1:] = torch.from_numpy(target)
@@ -168,11 +180,11 @@ print(rgb_map.shape)
 
 for c, x, y, w, l, yaw in targets[:, 1:7].numpy():
     # Draw rotated box
-    print("===============================")
-    print(c, x, y, w, l, yaw)
-    rgb_map = drawRotatedBox(rgb_map, x, y, w, l, yaw, colors[int(c)])
+    # print("===============================")
+    # print(c, x, y, w, l, yaw)
+    rgb_map = drawRotatedBox(rgb_map, x, y, w, l, yaw, colors[int(c)], c)
 
-rgb_map = cv2.rotate(rgb_map, cv2.ROTATE_180)
+# rgb_map = cv2.rotate(rgb_map, cv2.ROTATE_180)
 
 cv2.imshow("rgb_map", rgb_map.astype(np.float32))
 

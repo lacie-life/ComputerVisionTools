@@ -9,109 +9,27 @@ from __future__ import print_function
 import numpy as np
 import cv2
 import math
-
-boundary = {
-    "minX": 0,
-    "maxX": 70,
-    "minY": -35,
-    "maxY": 35,
-    "minZ": -10,
-    "maxZ": -2.5
-}
+from makeBEVUtils import *
 
 
-def camera_to_lidar(x, y, z, ):
+def camera_to_lidar(x, y, z, L2CTrans):
     p = np.array([x, y, z, 1])
+    # # Compute the inverse of the transformation matrix
+    # camera_to_lidar_transform = np.linalg.inv(L2CTrans)
+    #
+    # # Apply the transformation
+    # point_lidar_coord = np.dot(camera_to_lidar_transform, p)
 
-    extrinsic_matrix_lidar_to_base = np.array(
-        [
-            [0.247006, -0.955779, -0.15961, -16.8017],
-            [0.912112, 0.173713, 0.371316, 4.66979],
-            [-0.327169, -0.237299, 0.914685, 6.4602],
-            [0.0, 0.0, 0.0, 1.0],
-        ],
-        dtype=float,
-    )
-    # extrinsic base to south2 camera
-    extrinsic_matrix_base_to_camera = np.array(
-        [
-            [0.8924758822566284, 0.45096261644035174, -0.01093243630327495, 14.921784677055939],
-            [0.29913535165414396, -0.6097951995429897, -0.7339399539506467, 13.668310799382738],
-            [-0.3376460291207414, 0.6517534297474759, -0.679126369559744, -5.630430017833277],
-            [0.0, 0.0, 0.0, 1.0],
-        ],
-        dtype=float,
-    )
-
-    extrinsic_matrix_lidar_to_camera = np.matmul(
-        extrinsic_matrix_base_to_camera, extrinsic_matrix_lidar_to_base
-    )
-
-    # print(extrinsic_matrix_lidar_to_camera,"\n\n\n\n\n\n\n\n\n")
-    V2C_fake = np.array([
-        [
-            0.641509,
-            -0.766975,
-            0.0146997,
-            1.99131],
-        [
-            -0.258939,
-            -0.234538,
-            -0.936986,
-            1.21464],
-        [
-            0.722092,
-            0.597278,
-            -0.349058,
-            -1.50021]
-    ])
-    R0_fake = np.array(
-        [
-            [
-                0.80303484, -0.99417511, 0.02318113
-            ],
-            [
-                -0.65469669, -0.55805991, -0.99336792
-            ],
-            [
-                0.73326062, 0.59708904, -0.32528854
-            ]
-        ]
-    )
-
-    R0_i = np.zeros((4, 4))
-
-    # R0_i[:3, :3] = np.array([
-    #     [1.0,
-    #     0.0,
-    #     0.0],
-    #     [
-    #     0.0,
-    #     0.0,
-    #     1.0],
-    #     [
-    #     0.0,
-    #     -1.0,
-    #     0.0]
-    # ])
-    R0_i[:3, :3] = R0_fake
-    R0_i[3, 3] = 1
-    # p = np.matmul(R0_i, p)
-    # p = np.matmul(inverse_rigid_trans(V2C_fake), p)
-    p = np.linalg.inv(extrinsic_matrix_lidar_to_camera) @ p
-
-    # p = np.matmul(V2C, p)
-    p = p[0:3]
-    return tuple(p)
+    return tuple(p[:3])
 
 
-def camera_to_lidar_box(boxes):
+def camera_to_lidar_box(boxes, L2CTrans):
     # (N, 7) -> (N, 7) x,y,z,h,w,l,r
     ret = []
     for box in boxes:
         x, y, z, h, w, l, ry = box
         (x, y, z), h, w, l, rz = camera_to_lidar(
-            x, y, z), h, w, l, -ry - np.pi / 2
+            x, y, z, L2CTrans), h, w, l, -ry - np.pi / 2
         # rz = angle_in_limit(rz)
         ret.append([x, y, z, h, w, l, rz])
     return np.array(ret).reshape(-1, 7)
@@ -121,7 +39,7 @@ def build_yolo_target(labels):
     bc = boundary
     target = []
     for i in range(labels.shape[0]):
-        # print(labels[i])
+        print(labels[i])
         cl, x, y, z, h, w, l, yaw = labels[i]
         # ped and cyc labels are very small, so lets add some factor to height/width
         l = l + 0.3
