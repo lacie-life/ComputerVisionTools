@@ -35,27 +35,28 @@ zenith = np.array([
 ])
 incl = -zenith
 
+
 def get_range_image(pc, incl, height):
     incl_deg = incl * 180 / 3.1415
     # print(incl - np.roll(incl, 1))
-    xy_norm = np.linalg.norm(pc[:, :2], ord = 2, axis = 1)
+    xy_norm = np.linalg.norm(pc[:, :2], ord=2, axis=1)
     error_list = []
     for i in range(len(incl)):
         h = height[i]
         theta = incl[i]
-        error = np.abs(theta - np.arctan2(h - pc[:,2], xy_norm))
+        error = np.abs(theta - np.arctan2(h - pc[:, 2], xy_norm))
         error_list.append(error)
     all_error = np.stack(error_list, axis=-1)
     row_inds = np.argmin(all_error, axis=-1)
 
-    azi = np.arctan2(pc[:,1], pc[:,0])
+    azi = np.arctan2(pc[:, 1], pc[:, 0])
     width = 2048
     col_inds = width - 1.0 + 0.5 - (azi + np.pi) / (2.0 * np.pi) * width
     col_inds = np.round(col_inds).astype(np.int32)
     col_inds[col_inds == width] = width - 1
     col_inds[col_inds < 0] = 0
-    empty_range_image = np.full((64, width, 5), -1, dtype = np.float32)
-    point_range = np.linalg.norm(pc[:,:3], axis = 1, ord = 2)
+    empty_range_image = np.full((64, width, 5), -1, dtype=np.float32)
+    point_range = np.linalg.norm(pc[:, :3], axis=1, ord=2)
 
     order = np.argsort(-point_range)
     point_range = point_range[order]
@@ -63,9 +64,10 @@ def get_range_image(pc, incl, height):
     row_inds = row_inds[order]
     col_inds = col_inds[order]
 
-    empty_range_image[row_inds, col_inds, :] = np.concatenate([point_range[:,None], pc], axis = 1)
+    empty_range_image[row_inds, col_inds, :] = np.concatenate([point_range[:, None], pc], axis=1)
 
     return empty_range_image
+
 
 points = np.fromfile(pointcloud_path, dtype=np.float32).reshape(-1, 4)
 start = time.time()
@@ -76,5 +78,3 @@ range_image_mask = range_image[..., 0] > -1
 print("Range image generation time: ", end - start, " seconds")
 print(range_image.shape)
 print(range_image_mask.shape)
-
-
