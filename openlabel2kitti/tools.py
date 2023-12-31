@@ -29,32 +29,10 @@ def camera_to_lidar_box(boxes, L2CTrans):
     for box in boxes:
         x, y, z, h, w, l, ry = box
         (x, y, z), h, w, l, rz = camera_to_lidar(
-            x, y, z, L2CTrans), h, w, l, -ry - np.pi / 2
+            x, y, z, L2CTrans), h, w, l, ry
         # rz = angle_in_limit(rz)
         ret.append([x, y, z, h, w, l, rz])
     return np.array(ret).reshape(-1, 7)
-
-
-def build_yolo_target(labels):
-    bc = boundary
-    target = []
-    for i in range(labels.shape[0]):
-        print(labels[i])
-        cl, x, y, z, h, w, l, yaw = labels[i]
-        # ped and cyc labels are very small, so lets add some factor to height/width
-        l = l + 0.3
-        w = w + 0.3
-        yaw = np.pi * 2 - yaw
-
-        # print(x,y)
-        if (bc["minX"] < x < bc["maxX"]) and (bc["minY"] < y < bc["maxY"]):
-            y1 = (y - bc["minY"]) / (bc["maxY"] - bc["minY"])  # we should put this in [0,1], so divide max_size  80 m
-            x1 = (x - bc["minX"]) / (bc["maxX"] - bc["minX"])  # we should put this in [0,1], so divide max_size  40 m
-            w1 = w / (bc["maxY"] - bc["minY"])
-            l1 = l / (bc["maxX"] - bc["minX"])
-            target.append([cl, y1, x1, w1, l1, math.sin(float(yaw)), math.cos(float(yaw))])
-
-    return np.array(target, dtype=np.float32)
 
 
 class Object3d(object):

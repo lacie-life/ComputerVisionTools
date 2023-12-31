@@ -65,8 +65,8 @@ def convert_to_kitti_format(json_file, output_file, img, rgb_map):
                     quat_y = float(val[4])
                     quat_z = float(val[5])
                     quat_w = float(val[6])
-                    # rotation_yaw = R.from_quat([quat_x, quat_y, quat_z, quat_w]).as_euler("xyz", degrees=False)[2]
-                    rotation_yaw = R.from_quat([quat_x, quat_y, quat_z, quat_w]).as_euler("zyx", degrees=False)[1]
+                    rotation_yaw = R.from_quat([quat_x, quat_y, quat_z, quat_w]).as_euler("xyz", degrees=False)[2]
+                    # rotation_yaw = R.from_quat([quat_x, quat_y, quat_z, quat_w]).as_euler("zyx", degrees=False)[1]
 
                     location = np.array(
                         [
@@ -120,10 +120,10 @@ def convert_to_kitti_format(json_file, output_file, img, rgb_map):
 
     return img, T_lidar_to_camera
 
-json_file = '/home/lacie/Github/ComputerVisionTools/openlabel2kitti/test_2/1646667315_454719936_s110_lidar_ouster_south.json'
+json_file = '/home/lacie/Github/ComputerVisionTools/openlabel2kitti/test_1/1646667310_053239541_s110_lidar_ouster_south.json'
 output_file = 'kitti_format_data.txt'
-img_path = "/home/lacie/Github/ComputerVisionTools/openlabel2kitti/test_2/1646667315_563367657_s110_camera_basler_south2_8mm.jpg"
-pc_path = "/home/lacie/Github/ComputerVisionTools/openlabel2kitti/test_2/1646667315_454719936_s110_lidar_ouster_south.pcd"
+img_path = "/home/lacie/Github/ComputerVisionTools/openlabel2kitti/test_1/1646667310_055996268_s110_camera_basler_south2_8mm.jpg"
+pc_path = "/home/lacie/Github/ComputerVisionTools/openlabel2kitti/test_1/1646667310_053239541_s110_lidar_ouster_south.pcd"
 
 pc = PointCloud.from_path(pc_path).numpy()
 pc = pc[:, :4]
@@ -178,10 +178,12 @@ targets[:, 6] = torch.atan2(targets[:, 6], targets[:, 7])
 
 print(rgb_map.shape)
 
+print(targets)
+
 for c, x, y, w, l, yaw in targets[:, 1:7].numpy():
     # Draw rotated box
     # print("===============================")
-    # print(c, x, y, w, l, yaw)
+    print(c, x, y, w, l, yaw)
     rgb_map = drawRotatedBox(rgb_map, x, y, w, l, yaw, colors[int(c)], c)
 
 # rgb_map = cv2.rotate(rgb_map, cv2.ROTATE_180)

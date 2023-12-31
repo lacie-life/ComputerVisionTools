@@ -110,6 +110,7 @@ def build_yolo_target(labels):
             w1 = w / (bc["maxY"] - bc["minY"])
             l1 = l / (bc["maxX"] - bc["minX"])
             target.append([cl, y1, x1, w1, l1, math.sin(float(yaw)), math.cos(float(yaw))])
+            # target.append([cl, y1, x1, w1, l1, yaw, yaw])
 
     return np.array(target, dtype=np.float32)
 
@@ -141,8 +142,10 @@ def get_corners(x, y, w, l, yaw):
 # send parameters in bev image coordinates format
 def drawRotatedBox(img, x, y, w, l, yaw, color, c):
     img_new = img.astype(np.uint8).copy()
+
     cv2.circle(img_new, (int(x), int(y)), radius=2, color=(0, 0, 255), thickness=1)
     cv2.putText(img_new, str(c), (int(x), int(y)), cv2.FONT_HERSHEY_SIMPLEX, 0.3, (0, 0, 255), 1)
+
     bev_corners = get_corners(x, y, w, l, yaw)
 
     corners_int = bev_corners.reshape(-1, 1, 2).astype(int)
@@ -162,9 +165,10 @@ def draw_box_in_bev(rgb_map, target):
         cls_id = int(target[j][0])
         x = target[j][1] * BEV_WIDTH
         y = target[j][2] * BEV_HEIGHT
-        w = target[j][3] * BEV_WIDTH
-        l = target[j][4] * BEV_HEIGHT
-        yaw = np.arctan2(target[j][5], target[j][6])
+        w = target[j][4] * BEV_WIDTH
+        l = target[j][5] * BEV_HEIGHT
+        # yaw = np.arctan2(target[j][5], target[j][6])
+        yaw = target[j][6]
         drawRotatedBox(rgb_map, x, y, w, l, yaw, colors[cls_id])
 
 
