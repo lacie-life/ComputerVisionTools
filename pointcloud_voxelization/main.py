@@ -74,7 +74,7 @@ start = time()
 colors = [[0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]
 
 # Define the voxel size and grid range
-voxel_size = np.array([0.5, 0.5, 0.5])  # Example voxel size
+voxel_size = np.array([0.16, 0.16, 0.16])  # Example voxel size
 grid_range = np.array([0, -25, -2.73, 50, 25, 1.27])  # Example grid range
 
 index = 0
@@ -86,6 +86,12 @@ all_coordinates = []
 all_num_points_per_voxel = []
 
 voxel_pcds = []
+
+# t1 = time()
+# voxels, coordinates, num_points_per_voxel = voxelize(points_new, voxel_size, grid_range, max_points_in_voxel=35, max_num_voxels=20000)
+# t2 = time()
+# print("Point new shape: ", points_new.shape)
+# print('Time: ', t2-t1)
 
 for i, mask in enumerate([mask_below, mask_above]):
 
@@ -99,7 +105,10 @@ for i, mask in enumerate([mask_below, mask_above]):
     cv2.imshow('image', img)
     cv2.waitKey(0)
 
-    # voxels, coordinates, num_points_per_voxel = voxelize(point_masked, voxel_size, grid_range, max_points_in_voxel=35, max_num_voxels=20000)
+    t1 = time()
+    voxels, coordinates, num_points_per_voxel = voxelize(point_masked, voxel_size, grid_range, max_points_in_voxel=35, max_num_voxels=20000)
+    t2 = time()
+    print('Time: ', t2-t1)
     #
     # all_voxels.append(voxels)
     # all_coordinates.append(coordinates)
@@ -109,11 +118,11 @@ for i, mask in enumerate([mask_below, mask_above]):
     # print('coordinates: ', coordinates.shape)
     # print('num_points_per_voxel: ', num_points_per_voxel.shape)
 
-    bv_images.append(bv_image)
+    # bv_images.append(bv_image)
 
 end = time()
 
-print('Time: ', end-start)
+# print('Time: ', end-start)
 
 # colors = [[0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]
 #

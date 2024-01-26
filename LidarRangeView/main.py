@@ -1,9 +1,9 @@
 import numpy as np
 import time
 
-pointcloud_path = '/home/lacie/Datasets/KITTI/objects/train/velodyne/000360.bin'
+pointcloud_path = '/home/lacie/Datasets/KITTI/objects/train/velodyne/000366.bin'
 
-# KITTI scanning parameters, obtained from Hough transformation
+# KITTI scanning parameters, obtained from Hough transformationRange
 height = np.array(
     [0.20966667, 0.2092, 0.2078, 0.2078, 0.2078,
      0.20733333, 0.20593333, 0.20546667, 0.20593333, 0.20546667,

@@ -1,5 +1,6 @@
 import cv2
 import numpy as np
+import time
 
 # Load image and calibration data
 image = cv2.imread('/home/lacie/Datasets/KITTI/objects/train/image_2/000100.png')
@@ -190,8 +191,11 @@ image_undistorted = cv2.undistort(image, K, D)
 # cv2.waitKey(0)
 
 # image_bev = project_image_to_lidar_bev(image_undistorted, calib_file)
+t1 = time.time()
 lidar_bev = make_BVFeature(point_cloud)
+t2 = time.time()
 
+print("Time: ", t2 - t1)
 # cv2.imwrite('camera_birdseye_view.png', image_bev)
 # # Display or save the Bird's Eye View image
 # cv2.imshow('BEV Image', image_bev)
