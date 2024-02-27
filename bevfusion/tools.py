@@ -220,6 +220,7 @@ def generate_colorpc(img, pc, pcimg, sample_points=[], debug=False):
                 if dist < min_dist:
                     min_dist = dist
                     min_point = pc[idx]
+            print(min_point)
             pc_corners.append(min_point)
 
         pc_color = np.array(pc_color)
